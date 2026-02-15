@@ -11,6 +11,7 @@ export const books = pgTable('books', {
   title: varchar('title', { length: 255 }).default('Your Photos'),
   theme: varchar('theme', { length: 50 }).default('auto'),
   pageCount: integer('page_count'),
+  calendarStartMonth: integer('calendar_start_month').default(1), // 1-12 for calendar books
   
   status: varchar('status', { length: 50 }).default('uploading').notNull(),
   
