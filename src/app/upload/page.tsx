@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertCircle, Loader2, Info } from 'lucide-react';
 
 interface UploadedFile {
   file: File;
@@ -22,9 +22,30 @@ export default function UploadPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [overallProgress, setOverallProgress] = useState(0);
 
-  // Initialize book session on mount
+  // Initialize book session on mount (NO AUTH REQUIRED)
   useEffect(() => {
     const initializeBook = async () => {
+      // Check if there's an existing guest book in localStorage
+      const existingBookId = localStorage.getItem('currentBookId');
+      const existingToken = localStorage.getItem('currentSessionToken');
+      
+      if (existingBookId && existingToken) {
+        // Verify the book still exists
+        try {
+          const res = await fetch(`/api/books?id=${existingBookId}`);
+          const data = await res.json();
+          
+          if (data.success && data.book) {
+            setBookId(existingBookId);
+            setSessionToken(existingToken);
+            return;
+          }
+        } catch (error) {
+          console.log('Previous book not found, creating new one');
+        }
+      }
+      
+      // Create new guest book
       try {
         const res = await fetch('/api/books', {
           method: 'POST',
@@ -37,7 +58,7 @@ export default function UploadPage() {
           setBookId(data.book.id);
           setSessionToken(data.book.sessionToken);
           
-          // Store in localStorage for persistence
+          // Store in localStorage for guest persistence
           localStorage.setItem('currentBookId', data.book.id);
           localStorage.setItem('currentSessionToken', data.book.sessionToken);
         }
@@ -204,8 +225,8 @@ export default function UploadPage() {
       const data = await res.json();
       
       if (data.success) {
-        // Navigate to book viewer
-        router.push(`/book/${bookId}`);
+        // Navigate to processing page
+        router.push(`/processing?bookId=${bookId}`);
       } else {
         alert('Failed to process book: ' + data.error);
         setIsProcessing(false);
@@ -223,7 +244,7 @@ export default function UploadPage() {
   const hasErrors = errorCount > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50">
       <div className="mx-auto max-w-6xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
@@ -238,9 +259,19 @@ export default function UploadPage() {
           </h1>
           <p className="text-gray-600">
             {files.length === 0
-              ? 'Start by uploading 20-200 photos'
+              ? 'Start by uploading 20-200 photos • No account needed!'
               : `${files.length} photo${files.length === 1 ? '' : 's'} • ${successCount} uploaded ${hasErrors ? `• ${errorCount} failed` : ''}`}
           </p>
+        </div>
+
+        {/* Guest Notice */}
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm text-blue-900">
+              <strong>No account needed!</strong> Create your book now, and you'll only need to sign in (or continue as guest) when you're ready to checkout.
+            </p>
+          </div>
         </div>
 
         {/* Dropzone */}
@@ -251,11 +282,11 @@ export default function UploadPage() {
             onDragLeave={handleDragLeave}
             className={`border-2 border-dashed rounded-2xl p-16 text-center transition-all ${
               isDragging
-                ? 'border-blue-500 bg-blue-50 scale-105'
-                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                ? 'border-orange-500 bg-orange-50 scale-105'
+                : 'border-gray-300 hover:border-orange-400 hover:bg-orange-50'
             }`}
           >
-            <Upload className={`mx-auto h-20 w-20 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+            <Upload className={`mx-auto h-20 w-20 ${isDragging ? 'text-orange-500' : 'text-gray-400'}`} />
             <p className="mt-6 text-xl text-gray-700 font-medium">
               Drag & drop your photos here
             </p>
@@ -272,7 +303,7 @@ export default function UploadPage() {
             />
             <label
               htmlFor="file-input"
-              className="mt-6 inline-block rounded-lg bg-blue-600 px-8 py-3 text-white font-semibold hover:bg-blue-500 cursor-pointer transition-colors"
+              className="mt-6 inline-block rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-8 py-3 text-white font-semibold hover:shadow-lg cursor-pointer transition-all"
             >
               Browse Files
             </label>
@@ -311,7 +342,7 @@ export default function UploadPage() {
                   <div className="absolute bottom-2 right-2">
                     {fileData.status === 'uploading' && (
                       <div className="bg-white rounded-full p-1.5 shadow-lg">
-                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                        <Loader2 className="h-4 w-4 text-orange-600 animate-spin" />
                       </div>
                     )}
                     {fileData.status === 'success' && (
@@ -330,7 +361,7 @@ export default function UploadPage() {
                   {fileData.status === 'uploading' && (
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-lg overflow-hidden">
                       <div
-                        className="h-full bg-blue-600 transition-all duration-300"
+                        className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300"
                         style={{ width: `${fileData.progress}%` }}
                       />
                     </div>
@@ -341,7 +372,7 @@ export default function UploadPage() {
               {/* Add More Card */}
               <label
                 htmlFor="file-input-2"
-                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors"
               >
                 <Upload className="h-8 w-8 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-600">Add More</span>
@@ -362,7 +393,7 @@ export default function UploadPage() {
                 <button
                   onClick={uploadAllFiles}
                   disabled={isProcessing || files.every(f => f.status !== 'pending')}
-                  className="flex-1 rounded-lg bg-blue-600 px-6 py-4 text-lg font-semibold text-white hover:bg-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-4 text-lg font-semibold text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                 >
                   {isProcessing ? (
                     <>
@@ -379,7 +410,7 @@ export default function UploadPage() {
                 <button
                   onClick={processBook}
                   disabled={isProcessing}
-                  className="flex-1 rounded-lg bg-green-600 px-6 py-4 text-lg font-semibold text-white hover:bg-green-500 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 rounded-full bg-green-600 px-6 py-4 text-lg font-semibold text-white hover:bg-green-500 disabled:bg-gray-400 transition-all flex items-center justify-center gap-2"
                 >
                   {isProcessing ? (
                     <>
@@ -401,7 +432,7 @@ export default function UploadPage() {
               <div className="mt-6">
                 <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-500"
                     style={{ width: `${overallProgress}%` }}
                   />
                 </div>
