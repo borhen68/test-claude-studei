@@ -19,7 +19,7 @@ interface PageThumbnailsProps {
   onDeletePage: (index: number) => void;
 }
 
-export function PageThumbnails({
+export default function PageThumbnails({
   pages,
   currentIndex,
   onPageSelect,

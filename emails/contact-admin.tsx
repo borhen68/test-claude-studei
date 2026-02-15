@@ -1,4 +1,4 @@
-import { Section, Text, Hr, Code } from '@react-email/components';
+import { Section, Text, Hr, CodeBlock } from '@react-email/components';
 import * as React from 'react';
 import { BaseLayout } from './base-layout';
 
@@ -7,7 +7,7 @@ export const ContactAdmin = ({ submissionId, name, email, subject, message, subm
     <Section style={{padding:'30px 40px'}}>
       <Text style={{fontSize:'28px',fontWeight:'700',textAlign:'center' as const}}>📧 New Contact Submission</Text>
       <Section style={{backgroundColor:'#f3f4f6',padding:'16px',borderRadius:'8px'}}>
-        <Code style={{backgroundColor:'#fff',padding:'8px 12px',borderRadius:'4px',fontSize:'14px'}}>{submissionId}</Code>
+        <CodeBlock style={{backgroundColor:'#fff',padding:'8px 12px',borderRadius:'4px',fontSize:'14px'}}>{submissionId}</CodeBlock>
         <Text style={{fontSize:'14px',margin:'8px 0'}}>{submittedAt}</Text>
       </Section>
       <Hr />

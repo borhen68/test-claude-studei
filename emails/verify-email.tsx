@@ -1,4 +1,4 @@
-import { Section, Text, Button, Code } from '@react-email/components';
+import { Section, Text, Button, CodeBlock } from '@react-email/components';
 import * as React from 'react';
 import { BaseLayout } from './base-layout';
 
@@ -19,7 +19,7 @@ export const VerifyEmail = ({ verifyUrl, verifyCode }: VerifyEmailProps) => {
         </Section>
         {verifyCode && (
           <Section style={{textAlign:'center' as const}}>
-            <Code style={{backgroundColor:'#f3f4f6',padding:'16px 24px',borderRadius:'8px',fontSize:'24px',fontWeight:'bold'}}>{verifyCode}</Code>
+            <CodeBlock style={{backgroundColor:'#f3f4f6',padding:'16px 24px',borderRadius:'8px',fontSize:'24px',fontWeight:'bold'}}>{verifyCode}</CodeBlock>
           </Section>
         )}
       </Section>

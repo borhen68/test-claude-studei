@@ -11,7 +11,7 @@ interface PreviewModalProps {
   onClose: () => void;
 }
 
-export function PreviewModal({ isOpen, book, onClose }: PreviewModalProps) {
+export default function PreviewModal({ isOpen, book, onClose }: PreviewModalProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 

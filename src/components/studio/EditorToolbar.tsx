@@ -33,7 +33,7 @@ const TEMPLATES = [
   { id: 'gallery_6', name: 'Gallery', icon: '📸', slots: 6 },
 ];
 
-export function EditorToolbar({
+export default function EditorToolbar({
   selectedPhotoId,
   currentPage,
   theme,

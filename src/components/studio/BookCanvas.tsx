@@ -30,7 +30,7 @@ interface BookCanvasProps {
   onNavigate: (direction: 'prev' | 'next') => void;
 }
 
-export function BookCanvas({
+export default function BookCanvas({
   page,
   selectedPhotoId,
   onPhotoSelect,

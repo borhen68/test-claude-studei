@@ -21,7 +21,7 @@ interface EditorHeaderProps {
   onRedo: () => void;
 }
 
-export function EditorHeader({
+export default function EditorHeader({
   book,
   onTitleChange,
   onBack,
