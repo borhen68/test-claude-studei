@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 export function useAutoSave<T>(
   data: T,
@@ -15,19 +15,17 @@ export function useAutoSave<T>(
   useEffect(() => {
     if (!isDirty) return;
 
-    // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout for auto-save
     timeoutRef.current = setTimeout(async () => {
       setIsSaving(true);
       try {
         await onSave(data);
         setLastSaved(new Date());
       } catch (error) {
-        console.error('Auto-save failed:', error);
+        console.error("Auto-save failed:", error);
       } finally {
         setIsSaving(false);
       }
@@ -38,7 +36,7 @@ export function useAutoSave<T>(
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [data, isDirty, debounceMs, onSave]);
+  }, [data, isDirty, debounceMs]);
 
   return { isSaving, lastSaved };
 }

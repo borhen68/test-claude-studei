@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface HistoryState<T> {
   past: T[];
@@ -29,10 +29,8 @@ export function useHistory<T>(initialState: T) {
   const undo = useCallback(() => {
     setState((currentState) => {
       if (currentState.past.length === 0) return currentState;
-
       const previous = currentState.past[currentState.past.length - 1];
       const newPast = currentState.past.slice(0, currentState.past.length - 1);
-
       return {
         past: newPast,
         present: previous,
@@ -44,10 +42,8 @@ export function useHistory<T>(initialState: T) {
   const redo = useCallback(() => {
     setState((currentState) => {
       if (currentState.future.length === 0) return currentState;
-
       const next = currentState.future[0];
       const newFuture = currentState.future.slice(1);
-
       return {
         past: [...currentState.past, currentState.present],
         present: next,
