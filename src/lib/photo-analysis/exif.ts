@@ -1,4 +1,4 @@
-import { exifr } from 'exifr';
+import exifr from 'exifr';
 
 export async function extractExifData(buffer: Buffer) {
   try {

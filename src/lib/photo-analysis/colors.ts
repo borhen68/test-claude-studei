@@ -1,10 +1,11 @@
-import Vibrant from 'node-vibrant';
-
 /**
  * Extract dominant colors from image
+ * Using simplified approach for better compatibility
  */
 export async function extractColors(buffer: Buffer) {
   try {
+    // Dynamic import for better compatibility
+    const Vibrant = (await import('node-vibrant')).default;
     const palette = await Vibrant.from(buffer).getPalette();
     
     const colors = {
@@ -25,7 +26,7 @@ export async function extractColors(buffer: Buffer) {
       .map(([name, hex]) => ({
         name,
         hex,
-        population: palette[name as keyof typeof palette]?.population || 0,
+        population: (palette as any)[name]?.population || 0,
       }))
       .sort((a, b) => b.population - a.population);
     
@@ -35,6 +36,7 @@ export async function extractColors(buffer: Buffer) {
     };
   } catch (error) {
     console.error('Color extraction failed:', error);
+    // Return fallback colors
     return {
       dominantColor: '#808080',
       palette: [],

@@ -1,7 +1,9 @@
 import { pgTable, text, uuid, timestamp, integer, decimal, boolean, jsonb, varchar } from 'drizzle-orm/pg-core';
+import { users } from './auth-schema';
 
 export const books = pgTable('books', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
   sessionToken: varchar('session_token', { length: 255 }).notNull().unique(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
