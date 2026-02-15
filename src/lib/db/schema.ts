@@ -28,6 +28,8 @@ export const photos = pgTable('photos', {
   
   originalUrl: text('original_url').notNull(),
   processedUrl: text('processed_url'),
+  enhancedUrl: text('enhanced_url'),
+  enhancementLevel: varchar('enhancement_level', { length: 20 }).default('auto'),
   thumbnailUrl: text('thumbnail_url'),
   
   filename: varchar('filename', { length: 255 }),
