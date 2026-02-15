@@ -55,7 +55,7 @@ export function Footer() {
               <span className="text-2xl font-bold text-white">Frametale</span>
             </Link>
             <p className="text-sm text-gray-400 mb-6">
-              Turn your photos into beautiful books with AI-powered layouts.
+              Turn your photos into beautiful books with intelligent automatic layouts.
             </p>
             <div className="flex gap-4">
               <a href="#" className="hover:text-white transition-colors">

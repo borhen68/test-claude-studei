@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, CheckCircle, AlertCircle, Loader2, Info } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertCircle, Loader2, Info, Plus, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface UploadedFile {
   file: File;
@@ -22,15 +23,12 @@ export default function UploadPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [overallProgress, setOverallProgress] = useState(0);
 
-  // Initialize book session on mount (NO AUTH REQUIRED)
   useEffect(() => {
     const initializeBook = async () => {
-      // Check if there's an existing guest book in localStorage
       const existingBookId = localStorage.getItem('currentBookId');
       const existingToken = localStorage.getItem('currentSessionToken');
       
       if (existingBookId && existingToken) {
-        // Verify the book still exists
         try {
           const res = await fetch(`/api/books?id=${existingBookId}`);
           const data = await res.json();
@@ -45,7 +43,6 @@ export default function UploadPage() {
         }
       }
       
-      // Create new guest book
       try {
         const res = await fetch('/api/books', {
           method: 'POST',
@@ -57,8 +54,6 @@ export default function UploadPage() {
         if (data.success) {
           setBookId(data.book.id);
           setSessionToken(data.book.sessionToken);
-          
-          // Store in localStorage for guest persistence
           localStorage.setItem('currentBookId', data.book.id);
           localStorage.setItem('currentSessionToken', data.book.sessionToken);
         }
@@ -89,10 +84,7 @@ export default function UploadPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
-    if (e.dataTransfer.files) {
-      handleFileSelect(e.dataTransfer.files);
-    }
+    if (e.dataTransfer.files) handleFileSelect(e.dataTransfer.files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -115,11 +107,8 @@ export default function UploadPage() {
   };
 
   const uploadFile = async (fileData: UploadedFile, index: number): Promise<void> => {
-    if (!bookId) {
-      throw new Error('Book not initialized');
-    }
+    if (!bookId) throw new Error('Book not initialized');
 
-    // Update status to uploading
     setFiles(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], status: 'uploading', progress: 0 };
@@ -133,7 +122,6 @@ export default function UploadPage() {
     try {
       const xhr = new XMLHttpRequest();
       
-      // Track upload progress
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const progress = Math.round((e.loaded / e.total) * 100);
@@ -191,8 +179,6 @@ export default function UploadPage() {
 
   const uploadAllFiles = async () => {
     setIsProcessing(true);
-    
-    // Upload files in batches of 3 for better performance
     const batchSize = 3;
     const pendingFiles = files
       .map((f, i) => ({ file: f, index: i }))
@@ -204,7 +190,6 @@ export default function UploadPage() {
         batch.map(({ file, index }) => uploadFile(file, index))
       );
       
-      // Update overall progress
       const completed = files.filter(f => f.status === 'success').length;
       setOverallProgress(Math.round((completed / files.length) * 100));
     }
@@ -214,7 +199,6 @@ export default function UploadPage() {
 
   const processBook = async () => {
     if (!bookId) return;
-    
     setIsProcessing(true);
     
     try {
@@ -225,7 +209,6 @@ export default function UploadPage() {
       const data = await res.json();
       
       if (data.success) {
-        // Navigate to processing page
         router.push(`/processing?bookId=${bookId}`);
       } else {
         alert('Failed to process book: ' + data.error);
@@ -241,141 +224,189 @@ export default function UploadPage() {
   const successCount = files.filter(f => f.status === 'success').length;
   const errorCount = files.filter(f => f.status === 'error').length;
   const allUploaded = files.length > 0 && successCount === files.length;
-  const hasErrors = errorCount > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-amber-50">
-      <div className="mx-auto max-w-6xl px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50/50 to-amber-50/30">
+      <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <motion.div 
+          className="mb-12"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <button
             onClick={() => router.push('/')}
-            className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+            className="text-sm text-neutral-600 hover:text-neutral-900 mb-4 inline-flex items-center gap-2 transition-colors"
+            aria-label="Back to Home"
           >
-            ← Back to Home
+            ← Back
           </button>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-br from-neutral-900 to-neutral-700 bg-clip-text text-transparent mb-4">
             Upload Your Photos
           </h1>
-          <p className="text-gray-600">
+          <p className="text-xl text-neutral-600">
             {files.length === 0
               ? 'Start by uploading 20-200 photos • No account needed!'
-              : `${files.length} photo${files.length === 1 ? '' : 's'} • ${successCount} uploaded ${hasErrors ? `• ${errorCount} failed` : ''}`}
+              : `${files.length} photo${files.length === 1 ? '' : 's'} selected • ${successCount} uploaded ${errorCount > 0 ? `• ${errorCount} failed` : ''}`}
           </p>
-        </div>
+        </motion.div>
 
         {/* Guest Notice */}
-        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm text-blue-900">
-              <strong>No account needed!</strong> Create your book now, and you'll only need to sign in (or continue as guest) when you're ready to checkout.
+        <motion.div 
+          className="mb-8 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-3xl p-6 flex items-start gap-4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex-shrink-0 p-3 bg-blue-100 rounded-2xl">
+            <Info className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-blue-900 text-lg mb-1">No Account Needed!</h3>
+            <p className="text-blue-800 leading-relaxed">
+              Create your book now, and you'll only need to sign in (or continue as guest) when you're ready to checkout.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Dropzone */}
         {files.length === 0 && (
-          <div
+          <motion.div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`border-2 border-dashed rounded-2xl p-16 text-center transition-all ${
+            className={`relative border-4 border-dashed rounded-3xl p-20 text-center transition-all duration-300 ${
               isDragging
-                ? 'border-orange-500 bg-orange-50 scale-105'
-                : 'border-gray-300 hover:border-orange-400 hover:bg-orange-50'
+                ? 'border-violet-500 bg-violet-50 scale-[1.02] shadow-2xl'
+                : 'border-neutral-300 bg-white/50 backdrop-blur-sm hover:border-violet-400 hover:bg-violet-50/50'
             }`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
           >
-            <Upload className={`mx-auto h-20 w-20 ${isDragging ? 'text-orange-500' : 'text-gray-400'}`} />
-            <p className="mt-6 text-xl text-gray-700 font-medium">
-              Drag & drop your photos here
-            </p>
-            <p className="mt-2 text-gray-500">
-              or click to browse your files
-            </p>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
-              className="hidden"
-              id="file-input"
-            />
-            <label
-              htmlFor="file-input"
-              className="mt-6 inline-block rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-8 py-3 text-white font-semibold hover:shadow-lg cursor-pointer transition-all"
+            <motion.div
+              animate={{
+                y: isDragging ? -10 : 0,
+                scale: isDragging ? 1.1 : 1,
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
-              Browse Files
-            </label>
-            <p className="mt-6 text-sm text-gray-500">
-              JPG, PNG, HEIC • Max 20MB each • 20-200 photos recommended
-            </p>
-          </div>
+              <div className="inline-flex p-6 bg-gradient-to-br from-violet-100 to-purple-100 rounded-3xl mb-6">
+                <Upload className={`h-16 w-16 ${isDragging ? 'text-violet-600' : 'text-violet-500'}`} />
+              </div>
+              <h3 className="text-3xl font-bold text-neutral-900 mb-3">
+                Drop Your Photos Here
+              </h3>
+              <p className="text-lg text-neutral-600 mb-6">
+                or click to browse your files
+              </p>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
+                className="hidden"
+                id="file-input"
+              />
+              <label
+                htmlFor="file-input"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+              >
+                <Plus className="h-6 w-6" />
+                Browse Files
+              </label>
+              <p className="mt-8 text-sm text-neutral-500">
+                JPG, PNG, HEIC • Max 20MB each • 20-200 photos recommended
+              </p>
+            </motion.div>
+          </motion.div>
         )}
 
-        {/* Photo Grid */}
+        {/* Photo Masonry Grid */}
         {files.length > 0 && (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
-              {files.map((fileData, index) => (
-                <div key={index} className="relative aspect-square group">
-                  <img
-                    src={fileData.preview}
-                    alt={`Photo ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  
-                  {/* Status Overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg" />
-                  
-                  {/* Remove Button */}
-                  {fileData.status === 'pending' && (
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                  
-                  {/* Status Indicator */}
-                  <div className="absolute bottom-2 right-2">
-                    {fileData.status === 'uploading' && (
-                      <div className="bg-white rounded-full p-1.5 shadow-lg">
-                        <Loader2 className="h-4 w-4 text-orange-600 animate-spin" />
-                      </div>
-                    )}
-                    {fileData.status === 'success' && (
-                      <div className="bg-green-500 rounded-full p-1.5 shadow-lg">
-                        <CheckCircle className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                    {fileData.status === 'error' && (
-                      <div className="bg-red-500 rounded-full p-1.5 shadow-lg">
-                        <AlertCircle className="h-4 w-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  {fileData.status === 'uploading' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-lg overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300"
-                        style={{ width: `${fileData.progress}%` }}
+          <div className="space-y-8">
+            <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">
+              <AnimatePresence>
+                {files.map((fileData, index) => (
+                  <motion.div
+                    key={index}
+                    className="relative mb-4 break-inside-avoid group"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <div className="relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
+                      <img
+                        src={fileData.preview}
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-auto object-cover"
+                        loading="lazy"
                       />
+                      
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      {fileData.status === 'pending' && (
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="absolute top-3 right-3 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg"
+                          aria-label="Remove photo"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      
+                      <div className="absolute bottom-3 right-3">
+                        {fileData.status === 'uploading' && (
+                          <div className="bg-white rounded-full p-2 shadow-lg">
+                            <Loader2 className="h-5 w-5 text-violet-600 animate-spin" />
+                          </div>
+                        )}
+                        {fileData.status === 'success' && (
+                          <motion.div 
+                            className="bg-green-500 rounded-full p-2 shadow-lg"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                          >
+                            <CheckCircle className="h-5 w-5 text-white" />
+                          </motion.div>
+                        )}
+                        {fileData.status === 'error' && (
+                          <div className="bg-red-500 rounded-full p-2 shadow-lg">
+                            <AlertCircle className="h-5 w-5 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {fileData.status === 'uploading' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/30 overflow-hidden rounded-b-2xl">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-violet-500 to-purple-600"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${fileData.progress}%` }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               
               {/* Add More Card */}
-              <label
+              <motion.label
                 htmlFor="file-input-2"
-                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors"
+                className="relative flex items-center justify-center aspect-square border-4 border-dashed border-neutral-300 rounded-2xl cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all duration-300 group mb-4"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-600">Add More</span>
+                <div className="text-center p-6">
+                  <div className="inline-flex p-4 bg-violet-100 rounded-2xl mb-3 group-hover:bg-violet-200 transition-colors">
+                    <Plus className="h-8 w-8 text-violet-600" />
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-700">Add More</p>
+                </div>
                 <input
                   type="file"
                   multiple
@@ -384,64 +415,84 @@ export default function UploadPage() {
                   className="hidden"
                   id="file-input-2"
                 />
-              </label>
+              </motion.label>
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              {!allUploaded && (
-                <button
-                  onClick={uploadAllFiles}
-                  disabled={isProcessing || files.every(f => f.status !== 'pending')}
-                  className="flex-1 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-4 text-lg font-semibold text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Uploading... {overallProgress}%
-                    </>
-                  ) : (
-                    `Upload ${files.filter(f => f.status === 'pending').length} Photos`
-                  )}
-                </button>
-              )}
-              
-              {allUploaded && (
-                <button
-                  onClick={processBook}
-                  disabled={isProcessing}
-                  className="flex-1 rounded-full bg-green-600 px-6 py-4 text-lg font-semibold text-white hover:bg-green-500 disabled:bg-gray-400 transition-all flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Creating Your Book...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-5 w-5" />
-                      Create My Book
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            <motion.div 
+              className="sticky bottom-8 left-0 right-0 bg-white/80 backdrop-blur-lg border-2 border-neutral-200 rounded-3xl p-6 shadow-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                {!allUploaded && (
+                  <motion.button
+                    onClick={uploadAllFiles}
+                    disabled={isProcessing || files.every(f => f.status !== 'pending')}
+                    className="flex-1 w-full sm:w-auto rounded-full bg-gradient-to-br from-violet-600 to-purple-700 px-8 py-4 text-lg font-bold text-white shadow-xl hover:shadow-2xl hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 hover:-translate-y-1"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        Uploading... {overallProgress}%
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-6 w-6" />
+                        Upload {files.filter(f => f.status === 'pending').length} Photos
+                      </>
+                    )}
+                  </motion.button>
+                )}
+                
+                {allUploaded && (
+                  <motion.button
+                    onClick={processBook}
+                    disabled={isProcessing}
+                    className="flex-1 w-full sm:w-auto rounded-full bg-gradient-to-br from-green-600 to-emerald-700 px-8 py-4 text-lg font-bold text-white shadow-xl hover:shadow-2xl hover:shadow-green-500/40 disabled:opacity-50 transition-all flex items-center justify-center gap-3 hover:-translate-y-1"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-6 w-6" />
+                        Create My Book
+                      </>
+                    )}
+                  </motion.button>
+                )}
 
-            {/* Progress Summary */}
-            {isProcessing && !allUploaded && (
-              <div className="mt-6">
-                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-500"
-                    style={{ width: `${overallProgress}%` }}
-                  />
+                <div className="text-center sm:text-left">
+                  <p className="text-sm text-neutral-600">
+                    <strong className="text-neutral-900">{successCount}</strong> of <strong className="text-neutral-900">{files.length}</strong> uploaded
+                  </p>
                 </div>
-                <p className="text-center text-sm text-gray-600 mt-2">
-                  {successCount} of {files.length} photos uploaded
-                </p>
               </div>
-            )}
-          </>
+
+              {isProcessing && !allUploaded && (
+                <div className="mt-4">
+                  <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-violet-500 to-purple-600"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${overallProgress}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
         )}
       </div>
     </div>

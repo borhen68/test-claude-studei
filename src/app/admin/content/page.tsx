@@ -7,7 +7,7 @@ export default function AdminContentPage() {
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState({
     heroTitle: 'Turn Your Photos Into Beautiful Books',
-    heroSubtitle: 'AI-powered photo book creator that automatically organizes your memories into stunning layouts.',
+    heroSubtitle: 'Intelligent photo book creator that automatically organizes your memories into stunning layouts.',
     aboutMission: 'Our mission is to help families preserve their precious memories...',
   });
 

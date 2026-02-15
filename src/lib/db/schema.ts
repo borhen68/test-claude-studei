@@ -131,7 +131,7 @@ export const books = pgTable('books', {
  * Photos table - stores individual photo metadata and analysis
  * 
  * Each photo includes original file, processing results, EXIF data,
- * and AI-powered quality/content analysis for smart layout generation.
+ * and intelligent automatic quality/content analysis for smart layout generation.
  */
 export const photos = pgTable('photos', {
   id: uuid('id').defaultRandom().primaryKey(),

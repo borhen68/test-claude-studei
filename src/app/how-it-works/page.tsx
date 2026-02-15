@@ -181,7 +181,7 @@ export default function HowItWorksPage() {
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                   <Sparkles className="w-6 h-6 text-orange-600" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">AI-Powered Design</h3>
+                <h3 className="text-xl font-bold mb-3">Intelligent Automatic Design</h3>
                 <p className="text-gray-600">
                   Our smart algorithm creates professional layouts automatically. No design experience needed.
                 </p>
