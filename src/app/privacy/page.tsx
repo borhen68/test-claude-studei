@@ -1,100 +1,82 @@
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+'use client';
 
-export const metadata = {
-  title: 'Privacy Policy - Frametale',
-  description: 'How we collect, use, and protect your personal information.',
-};
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { Shield } from 'lucide-react';
 
 export default function PrivacyPage() {
-  return (
-    <div className="min-h-screen bg-white">
-      <Header />
+  const sections = [
+    {
+      title: 'Information We Collect',
+      content: 'We collect information you provide directly to us, such as when you create an account, upload photos, or place an order. This includes your name, email address, shipping address, and payment information.',
+    },
+    {
+      title: 'How We Use Your Information',
+      content: 'We use the information we collect to provide, maintain, and improve our services, process your orders, send you updates, and respond to your requests.',
+    },
+    {
+      title: 'Data Security',
+      content: 'We implement industry-standard security measures to protect your personal information from unauthorized access, disclosure, alteration, and destruction.',
+    },
+    {
+      title: 'Your Rights',
+      content: 'You have the right to access, update, or delete your personal information at any time. You can manage your preferences in your account settings.',
+    },
+  ];
 
-      <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+      <header className="glass border-b border-neutral-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            Frametale
+          </Link>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+            <Shield className="w-8 h-8 text-violet-600" />
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-4">
             Privacy Policy
           </h1>
-          <p className="text-gray-600">Last updated: February 15, 2024</p>
+          <p className="text-neutral-600">Last updated: February 15, 2026</p>
+        </motion.div>
+
+        <div className="glass rounded-3xl p-8 md:p-12 space-y-8">
+          <p className="text-lg text-neutral-700 leading-relaxed">
+            At Frametale, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your personal information.
+          </p>
+
+          {sections.map((section, index) => (
+            <motion.div
+              key={section.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <h2 className="text-2xl font-bold text-neutral-900 mb-3">{section.title}</h2>
+              <p className="text-neutral-700 leading-relaxed">{section.content}</p>
+            </motion.div>
+          ))}
+
+          <div className="pt-8 border-t border-neutral-200">
+            <h2 className="text-2xl font-bold text-neutral-900 mb-3">Contact Us</h2>
+            <p className="text-neutral-700 leading-relaxed">
+              If you have any questions about this Privacy Policy, please contact us at{' '}
+              <a href="mailto:privacy@frametale.com" className="text-violet-600 hover:text-violet-700 font-medium">
+                privacy@frametale.com
+              </a>
+            </p>
+          </div>
         </div>
-      </section>
-
-      <section className="py-20">
-        <div className="mx-auto max-w-4xl px-6 prose prose-lg">
-          <h2>1. Information We Collect</h2>
-          <p>
-            We collect information you provide directly to us, including:
-          </p>
-          <ul>
-            <li>Account information (name, email, password)</li>
-            <li>Photos and content you upload</li>
-            <li>Shipping and billing information</li>
-            <li>Communication preferences</li>
-          </ul>
-
-          <h2>2. How We Use Your Information</h2>
-          <p>We use the information we collect to:</p>
-          <ul>
-            <li>Process and fulfill your orders</li>
-            <li>Send you order updates and shipping information</li>
-            <li>Improve our services and AI algorithms</li>
-            <li>Respond to your requests and support needs</li>
-            <li>Send marketing communications (with your consent)</li>
-          </ul>
-
-          <h2>3. Information Sharing</h2>
-          <p>
-            We do not sell your personal information. We may share your information with:
-          </p>
-          <ul>
-            <li>Service providers who help us fulfill orders (printing, shipping)</li>
-            <li>Payment processors for secure transactions</li>
-            <li>Analytics providers to improve our service</li>
-          </ul>
-
-          <h2>4. Data Security</h2>
-          <p>
-            We use industry-standard security measures to protect your information, including
-            encryption, secure servers, and regular security audits.
-          </p>
-
-          <h2>5. Your Rights</h2>
-          <p>You have the right to:</p>
-          <ul>
-            <li>Access your personal information</li>
-            <li>Correct inaccurate information</li>
-            <li>Delete your account and data</li>
-            <li>Opt-out of marketing communications</li>
-            <li>Export your data</li>
-          </ul>
-
-          <h2>6. Cookies</h2>
-          <p>
-            We use cookies and similar technologies to improve your experience, analyze usage,
-            and deliver personalized content.
-          </p>
-
-          <h2>7. Children's Privacy</h2>
-          <p>
-            Our service is not intended for children under 13. We do not knowingly collect
-            information from children under 13.
-          </p>
-
-          <h2>8. Changes to Privacy Policy</h2>
-          <p>
-            We may update this privacy policy from time to time. We will notify you of any
-            significant changes via email or website notice.
-          </p>
-
-          <h2>9. Contact Us</h2>
-          <p>
-            For privacy-related questions, contact us at privacy@frametale.com
-          </p>
-        </div>
-      </section>
-
-      <Footer />
+      </div>
     </div>
   );
 }

@@ -1,77 +1,86 @@
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+'use client';
 
-export const metadata = {
-  title: 'Terms of Service - Frametale',
-  description: 'Terms and conditions for using Frametale services.',
-};
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { FileText } from 'lucide-react';
 
 export default function TermsPage() {
-  return (
-    <div className="min-h-screen bg-white">
-      <Header />
+  const sections = [
+    {
+      title: 'Acceptance of Terms',
+      content: 'By accessing and using Frametale, you accept and agree to be bound by the terms and provision of this agreement.',
+    },
+    {
+      title: 'Use License',
+      content: 'Permission is granted to temporarily download one copy of the materials on Frametale for personal, non-commercial transitory viewing only.',
+    },
+    {
+      title: 'User Content',
+      content: 'You retain all rights to the photos and content you upload. By uploading content, you grant us a license to use it solely for providing our services.',
+    },
+    {
+      title: 'Order and Payment',
+      content: 'All orders are subject to acceptance and availability. Payment must be received before order processing begins.',
+    },
+    {
+      title: 'Refunds and Returns',
+      content: 'We offer a 30-day satisfaction guarantee. If you\'re not happy with your photo book, contact us for a refund or reprint.',
+    },
+  ];
 
-      <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+      <header className="glass border-b border-neutral-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            Frametale
+          </Link>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center">
+            <FileText className="w-8 h-8 text-indigo-600" />
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-4">
             Terms of Service
           </h1>
-          <p className="text-gray-600">Last updated: February 15, 2024</p>
+          <p className="text-neutral-600">Last updated: February 15, 2026</p>
+        </motion.div>
+
+        <div className="glass rounded-3xl p-8 md:p-12 space-y-8">
+          <p className="text-lg text-neutral-700 leading-relaxed">
+            Welcome to Frametale. These Terms of Service govern your use of our website and services. Please read them carefully.
+          </p>
+
+          {sections.map((section, index) => (
+            <motion.div
+              key={section.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <h2 className="text-2xl font-bold text-neutral-900 mb-3">{section.title}</h2>
+              <p className="text-neutral-700 leading-relaxed">{section.content}</p>
+            </motion.div>
+          ))}
+
+          <div className="pt-8 border-t border-neutral-200">
+            <h2 className="text-2xl font-bold text-neutral-900 mb-3">Questions?</h2>
+            <p className="text-neutral-700 leading-relaxed">
+              If you have any questions about these Terms, please contact us at{' '}
+              <a href="mailto:legal@frametale.com" className="text-violet-600 hover:text-violet-700 font-medium">
+                legal@frametale.com
+              </a>
+            </p>
+          </div>
         </div>
-      </section>
-
-      <section className="py-20">
-        <div className="mx-auto max-w-4xl px-6 prose prose-lg">
-          <h2>1. Acceptance of Terms</h2>
-          <p>
-            By accessing and using Frametale's services, you accept and agree to be bound by the terms
-            and provision of this agreement.
-          </p>
-
-          <h2>2. Use of Service</h2>
-          <p>
-            You agree to use our service only for lawful purposes and in accordance with these Terms.
-            You are responsible for all content you upload and must have rights to use all photos.
-          </p>
-
-          <h2>3. Intellectual Property</h2>
-          <p>
-            You retain all rights to your photos and content. By uploading content, you grant Frametale
-            a license to process, store, and print your content for the purpose of fulfilling your orders.
-          </p>
-
-          <h2>4. Orders and Payment</h2>
-          <p>
-            All orders are subject to acceptance and availability. Prices are subject to change without notice.
-            Payment is required at the time of order placement.
-          </p>
-
-          <h2>5. Refunds and Returns</h2>
-          <p>
-            We offer a 100% satisfaction guarantee. If you're not satisfied with your product, contact us
-            within 30 days for a refund or reprint.
-          </p>
-
-          <h2>6. Limitation of Liability</h2>
-          <p>
-            Frametale shall not be liable for any indirect, incidental, special, consequential, or punitive
-            damages resulting from your use of our service.
-          </p>
-
-          <h2>7. Changes to Terms</h2>
-          <p>
-            We reserve the right to modify these terms at any time. Continued use of the service constitutes
-            acceptance of modified terms.
-          </p>
-
-          <h2>8. Contact</h2>
-          <p>
-            For questions about these Terms, please contact us at legal@frametale.com
-          </p>
-        </div>
-      </section>
-
-      <Footer />
+      </div>
     </div>
   );
 }

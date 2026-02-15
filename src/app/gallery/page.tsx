@@ -1,80 +1,136 @@
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { galleryImages } from '@/lib/data/mock-data';
+'use client';
 
-export const metadata = {
-  title: 'Gallery - Frametale',
-  description: 'Browse beautiful photo book examples and get inspired for your own creation.',
-};
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { Heart, Eye } from 'lucide-react';
 
 export default function GalleryPage() {
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
   const categories = ['All', 'Wedding', 'Travel', 'Family', 'Baby', 'Events'];
 
+  const galleryItems = [
+    { id: 1, title: 'Summer Adventures', category: 'Travel', likes: 142 },
+    { id: 2, title: 'Our Wedding Day', category: 'Wedding', likes: 256 },
+    { id: 3, title: 'Family Reunion 2026', category: 'Family', likes: 98 },
+    { id: 4, title: 'Baby\'s First Year', category: 'Baby', likes: 189 },
+    { id: 5, title: 'Europe Trip', category: 'Travel', likes: 221 },
+    { id: 6, title: 'Anniversary Celebration', category: 'Events', likes: 167 },
+    { id: 7, title: 'Graduation Memories', category: 'Events', likes: 134 },
+    { id: 8, title: 'Beach Vacation', category: 'Travel', likes: 203 },
+    { id: 9, title: 'Winter Wedding', category: 'Wedding', likes: 278 },
+  ];
+
+  const filtered = selectedCategory === 'All' 
+    ? galleryItems 
+    : galleryItems.filter(item => item.category === selectedCategory);
+
   return (
-    <div className="min-h-screen bg-white">
-      <Header />
-      
-      <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Get Inspired
-          </h1>
-          <p className="text-xl text-gray-600">
-            Browse our collection of beautiful photo books created by customers like you.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+      <header className="glass border-b border-neutral-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            Frametale
+          </Link>
         </div>
-      </section>
+      </header>
 
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                className="px-6 py-2 rounded-lg font-medium transition-all hover:bg-blue-600 hover:text-white bg-gray-100 text-gray-700"
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+            Gallery
+          </h1>
+          <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
+            Get inspired by beautiful photo books created by our community
+          </p>
+        </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {galleryImages.map((item) => (
-              <div key={item.id} className="group cursor-pointer">
-                <div className="aspect-[3/4] rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 mb-4 overflow-hidden group-hover:scale-105 transition-transform shadow-lg" />
-                <div className="px-2">
-                  <div className="text-sm font-semibold text-blue-600 mb-1">
-                    {item.category}
+        {/* Category filter */}
+        <div className="glass rounded-2xl p-2 inline-flex gap-2 mb-12 mx-auto flex-wrap justify-center">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`relative px-6 py-3 rounded-xl font-medium transition-all ${
+                selectedCategory === cat
+                  ? 'text-white'
+                  : 'text-neutral-700 hover:bg-white/50'
+              }`}
+            >
+              {selectedCategory === cat && (
+                <motion.div
+                  layoutId="activeCategory"
+                  className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{cat}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Masonry grid */}
+        <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+          {filtered.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="break-inside-avoid group cursor-pointer"
+            >
+              <div className="glass rounded-2xl overflow-hidden hover:shadow-xl transition-all">
+                {/* Image placeholder with gradient */}
+                <div className="aspect-[3/4] bg-gradient-to-br from-violet-200 via-indigo-200 to-purple-200 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <button className="p-4 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors">
+                      <Eye className="w-6 h-6 text-violet-600" />
+                    </button>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">{item.description}</p>
+                </div>
+                
+                {/* Details */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-700 mb-2">
+                        {item.category}
+                      </span>
+                      <h3 className="font-bold text-neutral-900 group-hover:text-violet-700 transition-colors">
+                        {item.title}
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-neutral-600">
+                    <button className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                      <Heart className="w-4 h-4" />
+                      {item.likes}
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </motion.div>
+          ))}
         </div>
-      </section>
 
-      <section className="py-20 bg-gray-50">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Ready to Create Yours?
-          </h2>
-          <p className="text-lg text-gray-600 mb-8">
-            Upload your photos and see your story come to life in minutes.
-          </p>
-          <a
-            href="/upload"
-            className="inline-block px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-500 transition-all"
-          >
-            Start Creating
-          </a>
+        {/* CTA */}
+        <div className="text-center mt-16">
+          <Link href="/upload">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-2 h-14 px-12 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-lg font-semibold shadow-xl shadow-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/40 transition-all"
+            >
+              Create Your Own Book
+            </motion.button>
+          </Link>
         </div>
-      </section>
-
-      <Footer />
+      </div>
     </div>
   );
 }

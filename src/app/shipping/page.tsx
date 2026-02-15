@@ -1,124 +1,104 @@
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+'use client';
+
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Truck, Package, Clock, MapPin } from 'lucide-react';
 
-export const metadata = {
-  title: 'Shipping & Delivery - Frametale',
-  description: 'Information about shipping times, costs, and delivery options.',
-};
-
 export default function ShippingPage() {
+  const shippingOptions = [
+    {
+      name: 'Standard Shipping',
+      icon: Package,
+      time: '7-10 business days',
+      price: 'Free on orders over $50',
+      color: 'from-violet-500 to-purple-500',
+    },
+    {
+      name: 'Express Shipping',
+      icon: Truck,
+      time: '3-5 business days',
+      price: '$14.99',
+      color: 'from-indigo-500 to-blue-500',
+    },
+    {
+      name: 'Rush Shipping',
+      icon: Clock,
+      time: '1-2 business days',
+      price: '$29.99',
+      color: 'from-amber-500 to-orange-500',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
-      <Header />
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+      <header className="glass border-b border-neutral-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            Frametale
+          </Link>
+        </div>
+      </header>
 
-      <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Shipping & Delivery
+      <div className="max-w-5xl mx-auto px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+            <Truck className="w-8 h-8 text-violet-600" />
+          </div>
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+            Shipping Information
           </h1>
-          <p className="text-xl text-gray-600">
-            Fast, reliable shipping to your door
-          </p>
-        </div>
-      </section>
+          <p className="text-xl text-neutral-600">Fast, reliable delivery to your door</p>
+        </motion.div>
 
-      <section className="py-20">
-        <div className="mx-auto max-w-4xl px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-            <div className="bg-white rounded-xl p-8 border-2 border-gray-200">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <Truck className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Standard Shipping
-              </h3>
-              <div className="text-3xl font-bold text-blue-600 mb-2">
-                FREE
-              </div>
-              <p className="text-gray-600 mb-4">on orders over $50</p>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• 5-7 business days production</li>
-                <li>• 3-5 days shipping</li>
-                <li>• Tracking included</li>
-                <li>• $5.99 for orders under $50</li>
-              </ul>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-8 text-white">
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4">
-                <Package className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-3">
-                Rush Production
-              </h3>
-              <div className="text-3xl font-bold mb-2">
-                $15
-              </div>
-              <p className="text-blue-100 mb-4">Get it faster!</p>
-              <ul className="space-y-2 text-sm text-blue-100">
-                <li>• 3 business days production</li>
-                <li>• Priority shipping (2-3 days)</li>
-                <li>• Expedited handling</li>
-                <li>• Perfect for gifts</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <Clock className="h-6 w-6 text-blue-600" />
-                <h3 className="text-xl font-bold text-gray-900">Production Times</h3>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <div className="font-bold text-gray-900 mb-1">Photo Books</div>
-                    <div className="text-sm text-gray-600">5-7 business days</div>
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-900 mb-1">Calendars</div>
-                    <div className="text-sm text-gray-600">3-5 business days</div>
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-900 mb-1">Cards</div>
-                    <div className="text-sm text-gray-600">2-3 business days</div>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {shippingOptions.map((option, index) => {
+            const Icon = option.icon;
+            return (
+              <motion.div
+                key={option.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="glass rounded-2xl p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${option.color.replace('500', '100')} flex items-center justify-center mb-4`}>
+                  <Icon className={`w-6 h-6 bg-gradient-to-r ${option.color} bg-clip-text text-transparent`} />
                 </div>
-              </div>
-            </div>
+                <h3 className="text-xl font-bold text-neutral-900 mb-2">{option.name}</h3>
+                <p className="text-neutral-600 mb-3">{option.time}</p>
+                <p className="text-lg font-semibold text-violet-600">{option.price}</p>
+              </motion.div>
+            );
+          })}
+        </div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass rounded-3xl p-8 md:p-12"
+        >
+          <h2 className="text-3xl font-bold text-neutral-900 mb-8">Shipping Details</h2>
+          <div className="space-y-6">
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <MapPin className="h-6 w-6 text-blue-600" />
-                <h3 className="text-xl font-bold text-gray-900">International Shipping</h3>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-6">
-                <p className="text-gray-600 mb-4">
-                  We ship to over 50 countries worldwide!
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li>• Canada: 7-10 business days, starting at $12.99</li>
-                  <li>• UK & Europe: 10-15 business days, starting at $19.99</li>
-                  <li>• Australia & Asia: 15-20 business days, starting at $24.99</li>
-                  <li>• Customs fees may apply</li>
-                </ul>
-              </div>
+              <h3 className="text-xl font-semibold text-neutral-900 mb-2">Production Time</h3>
+              <p className="text-neutral-700">All photo books are printed on-demand. Production typically takes 3-5 business days before shipping.</p>
             </div>
-
-            <div className="bg-blue-50 rounded-xl p-6">
-              <h4 className="font-bold text-gray-900 mb-2">Order Tracking</h4>
-              <p className="text-gray-600">
-                You'll receive an email with tracking information as soon as your order ships.
-                Track your package anytime from your account dashboard.
-              </p>
+            <div>
+              <h3 className="text-xl font-semibold text-neutral-900 mb-2">Tracking</h3>
+              <p className="text-neutral-700">You'll receive a tracking number via email once your order ships. Track your package anytime in your dashboard.</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-neutral-900 mb-2">International Shipping</h3>
+              <p className="text-neutral-700">We currently ship to the United States, Canada, and select European countries. International shipping times vary by destination.</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      <Footer />
+        </motion.div>
+      </div>
     </div>
   );
 }
