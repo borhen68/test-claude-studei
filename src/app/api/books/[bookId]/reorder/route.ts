@@ -1,166 +1,156 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { books, photos, pages } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
+import { books, orders } from '@/lib/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { bookId: string } }
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
   try {
-    const { bookId } = params;
+    const { bookId } = await params;
+    const body = await request.json();
+    const session = await getServerSession(authOptions);
 
-    // Fetch original book
-    const [originalBook] = await db
-      .select()
-      .from(books)
-      .where(eq(books.id, bookId))
-      .limit(1);
+    // Get the original book
+    const [book] = await db.select().from(books).where(eq(books.id, bookId)).limit(1);
 
-    if (!originalBook) {
+    if (!book) {
       return NextResponse.json(
         { success: false, error: 'Book not found' },
         { status: 404 }
       );
     }
 
-    // Check if book was completed (has PDF or was ordered)
-    if (originalBook.status !== 'completed' && !originalBook.finalPdfUrl) {
+    // Check if user owns this book (if logged in)
+    if (session?.user && book.userId !== session.user.id) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Can only reorder completed books' 
-        },
-        { status: 400 }
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
       );
     }
 
-    // Create new book (clone)
-    const newSessionToken = nanoid(32);
-    const [newBook] = await db
-      .insert(books)
-      .values({
-        userId: originalBook.userId,
-        sessionToken: newSessionToken,
-        title: originalBook.title || 'Your Photos',
-        theme: originalBook.theme,
-        pageCount: originalBook.pageCount,
-        status: 'processing', // Skip upload step
-        source: 'reorder',
-        conversionFunnel: {
-          ...(originalBook.conversionFunnel as any),
-          isReorder: true,
-          originalBookId: bookId,
-        },
-      })
-      .returning();
-
-    // Clone all photos
-    const originalPhotos = await db
-      .select()
-      .from(photos)
-      .where(eq(photos.bookId, bookId));
-
-    if (originalPhotos.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'No photos found in original book' },
-        { status: 400 }
-      );
+    // Find the most recent order for this book
+    let lastOrder = null;
+    if (body.lastOrderId) {
+      [lastOrder] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, body.lastOrderId))
+        .limit(1);
+    } else {
+      // Find most recent order for this book
+      [lastOrder] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.bookId, bookId))
+        .orderBy(desc(orders.createdAt))
+        .limit(1);
     }
 
-    // Create photo mappings (old ID -> new ID)
-    const photoIdMap = new Map<string, string>();
+    // Create checkout session with pre-filled data
+    const checkoutData: any = {
+      bookId,
+      reorder: true,
+    };
 
-    const clonedPhotos = await Promise.all(
-      originalPhotos.map(async (photo) => {
-        const [newPhoto] = await db
-          .insert(photos)
-          .values({
-            bookId: newBook.id,
-            originalUrl: photo.originalUrl,
-            processedUrl: photo.processedUrl,
-            enhancedUrl: photo.enhancedUrl,
-            thumbnailUrl: photo.thumbnailUrl,
-            filename: photo.filename,
-            fileSize: photo.fileSize,
-            mimeType: photo.mimeType,
-            width: photo.width,
-            height: photo.height,
-            aspectRatio: photo.aspectRatio,
-            dateTaken: photo.dateTaken,
-            cameraMake: photo.cameraMake,
-            cameraModel: photo.cameraModel,
-            exifOrientation: photo.exifOrientation,
-            qualityScore: photo.qualityScore,
-            sharpnessScore: photo.sharpnessScore,
-            hasFaces: photo.hasFaces,
-            faceCount: photo.faceCount,
-            dominantColor: photo.dominantColor,
-            colorPalette: photo.colorPalette,
-            orientation: photo.orientation,
-            isDuplicate: photo.isDuplicate,
-            usedInLayout: photo.usedInLayout,
-            sortOrder: photo.sortOrder,
-            enhancementLevel: photo.enhancementLevel,
-          })
-          .returning();
+    if (body.useLastShipping && lastOrder) {
+      // Pre-fill shipping info from last order
+      checkoutData.prefill = {
+        email: lastOrder.email,
+        shippingName: lastOrder.shippingName,
+        shippingAddressLine1: lastOrder.shippingAddressLine1,
+        shippingAddressLine2: lastOrder.shippingAddressLine2,
+        shippingCity: lastOrder.shippingCity,
+        shippingState: lastOrder.shippingState,
+        shippingZip: lastOrder.shippingZip,
+        shippingCountry: lastOrder.shippingCountry,
+        phone: lastOrder.phone,
+      };
+    }
 
-        photoIdMap.set(photo.id, newPhoto.id);
-        return newPhoto;
-      })
-    );
+    // Build checkout URL
+    const params = new URLSearchParams();
+    params.set('bookId', bookId);
+    params.set('reorder', 'true');
+    
+    if (checkoutData.prefill) {
+      params.set('prefill', JSON.stringify(checkoutData.prefill));
+    }
 
-    // Clone all pages (update photo IDs)
-    const originalPages = await db
-      .select()
-      .from(pages)
-      .where(eq(pages.bookId, bookId));
-
-    await Promise.all(
-      originalPages.map(async (page) => {
-        // Update photo IDs in the page data
-        const oldPhotoIds = page.photoIds as string[];
-        const newPhotoIds = oldPhotoIds.map(oldId => photoIdMap.get(oldId) || oldId);
-
-        await db.insert(pages).values({
-          bookId: newBook.id,
-          pageNumber: page.pageNumber,
-          template: page.template,
-          photoIds: newPhotoIds,
-          layoutData: page.layoutData,
-          textContent: page.textContent,
-        });
-      })
-    );
-
-    // Update book status to ready for preview
-    await db
-      .update(books)
-      .set({
-        status: 'ready',
-        coverImageUrl: originalBook.coverImageUrl,
-        previewPdfUrl: originalBook.previewPdfUrl, // Can reuse preview
-      })
-      .where(eq(books.id, newBook.id));
+    const checkoutUrl = `/checkout?${params.toString()}`;
 
     return NextResponse.json({
       success: true,
-      book: newBook,
-      message: `Book cloned successfully. ${clonedPhotos.length} photos copied.`,
-      stats: {
-        photosCloned: clonedPhotos.length,
-        pagesCloned: originalPages.length,
-      },
-      redirectUrl: `/book/${newBook.id}/preview`,
+      message: 'Reorder initiated',
+      checkoutUrl,
+      bookId,
+      lastOrder: lastOrder
+        ? {
+            id: lastOrder.id,
+            total: lastOrder.total,
+            createdAt: lastOrder.createdAt,
+          }
+        : null,
     });
   } catch (error) {
-    console.error('Error reordering book:', error);
+    console.error('Reorder error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to reorder book',
+      { success: false, error: 'Failed to process reorder' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET endpoint to fetch reorder information
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ bookId: string }> }
+) {
+  try {
+    const { bookId } = await params;
+
+    // Get book
+    const [book] = await db.select().from(books).where(eq(books.id, bookId)).limit(1);
+
+    if (!book) {
+      return NextResponse.json(
+        { success: false, error: 'Book not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get all orders for this book
+    const bookOrders = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.bookId, bookId))
+      .orderBy(desc(orders.createdAt));
+
+    return NextResponse.json({
+      success: true,
+      book: {
+        id: book.id,
+        title: book.title,
+        status: book.status,
       },
+      orders: bookOrders.map((order) => ({
+        id: order.id,
+        total: order.total,
+        status: order.status,
+        createdAt: order.createdAt,
+        shippedAt: order.shippedAt,
+      })),
+      canReorder: bookOrders.length > 0,
+    });
+  } catch (error) {
+    console.error('Failed to fetch reorder info:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch reorder information' },
       { status: 500 }
     );
   }
