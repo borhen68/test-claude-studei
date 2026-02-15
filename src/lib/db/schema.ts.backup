@@ -59,67 +59,6 @@ export const books = pgTable('books', {
   /** URL to final print-ready PDF */
   finalPdfUrl: text('final_pdf_url'),
   
-  
-  // PERSONALIZATION FIELDS - Book customization
-  /** Custom title for book cover */
-  coverTitle: text('cover_title'),
-  
-  /** Font family for cover text (serif, sans, script, modern, playful) */
-  coverFont: text('cover_font'),
-  
-  /** Hex color code for cover text */
-  coverTextColor: text('cover_text_color'),
-  
-  /** Cover text position (top, center, bottom) */
-  coverTextPosition: text('cover_text_position'),
-  
-  /** Cover layout style (full_bleed, framed, collage) */
-  coverLayout: text('cover_layout').default('full_bleed'),
-  
-  /** JSON theme configuration: { bgColor, accentColor, borderStyle, pageNumbers } */
-  customizationTheme: jsonb('customization_theme'),
-  
-  /** Paper finish type (matte, glossy, premium) */
-  paperType: text('paper_type').default('matte'),
-  
-  /** Cover binding type (hardcover, softcover, leather) */
-  coverType: text('cover_type').default('hardcover'),
-  
-  /** Selected book size in inches (8x8, 10x10, 12x12) */
-  bookSize: text('book_size').default('10x10'),
-  
-  /** Desired page count (20, 36, 48, 60) */
-  desiredPageCount: integer('desired_page_count').default(36),
-  
-  // PERSONALIZATION FIELDS - Calendar customization
-  /** JSON array of custom events: [{ date, title, color, recurring }] */
-  customEvents: jsonb('custom_events'),
-  
-  /** Month layout preference (photo_top, full_bleed, split) */
-  monthLayout: text('month_layout').default('photo_top'),
-  
-  /** Week start day (sunday, monday) */
-  weekStartDay: text('week_start_day').default('sunday'),
-  
-  /** Selected theme ID for calendar */
-  calendarThemeId: text('calendar_theme_id'),
-  
-  /** Number of photos per month (1, 2, 3, 4) */
-  photosPerMonth: integer('photos_per_month').default(1),
-  
-  // PERSONALIZATION FIELDS - Card customization
-  /** Custom message for greeting card */
-  cardMessage: text('card_message'),
-  
-  /** Font for card text */
-  cardFont: text('card_font'),
-  
-  /** Card layout style (photo_only, photo_text, text_only) */
-  cardLayout: text('card_layout'),
-  
-  /** Envelope style (plain, colored, pattern) */
-  envelopeStyle: text('envelope_style').default('plain'),
-  
   /** Traffic source tracking (google_photos, upload, instagram, etc.) */
   source: varchar('source', { length: 100 }),
   
@@ -213,17 +152,6 @@ export const photos = pgTable('photos', {
   
   /** User or algorithm determined sort order */
   sortOrder: integer('sort_order'),
-  
-  
-  // PERSONALIZATION FIELDS - Captions
-  /** User-added caption text */
-  caption: text('caption'),
-  
-  /** Caption display position (below, overlay, side) */
-  captionPosition: text('caption_position').default('below'),
-  
-  /** Caption font size (small, medium, large) */
-  captionSize: text('caption_size').default('small'),
   
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
