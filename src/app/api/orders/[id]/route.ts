@@ -5,10 +5,10 @@ const orders: any[] = [];
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     // Find order in mock database
     const order = orders.find(o => o.id === id);
@@ -34,10 +34,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
     
     const orderIndex = orders.findIndex(o => o.id === id);

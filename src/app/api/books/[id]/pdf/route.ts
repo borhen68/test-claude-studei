@@ -11,10 +11,10 @@ import { uploadFile } from '@/lib/storage/unified-storage';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     // Get book with photos and pages
     const [book] = await db.select().from(books).where(eq(books.id, id)).limit(1);
@@ -90,10 +90,10 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     // Get book with photos and pages
     const [book] = await db.select().from(books).where(eq(books.id, id)).limit(1);

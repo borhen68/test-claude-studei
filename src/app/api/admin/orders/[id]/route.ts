@@ -1,26 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { orders } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
+/**
+ * PATCH /api/admin/orders/:id
+ * Update order status
+ */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
-    const body = await request.json();
+    // TODO: Add authentication check here
     
-    // In production:
-    // 1. Verify admin authentication
-    // 2. Update order in database
-    // 3. If status changed to 'shipped', send tracking email
-    // 4. Update fulfillment provider
-
-    console.log(`Admin updating order ${id}:`, body);
-
+    const { id } = await context.params;
+    const body = await request.json();
+    const { status, trackingNumber } = body;
+    
+    if (!status) {
+      return NextResponse.json(
+        { success: false, error: 'Missing status' },
+        { status: 400 }
+      );
+    }
+    
+    const updates: any = { 
+      status, 
+      updatedAt: new Date() 
+    };
+    
+    if (trackingNumber) {
+      updates.trackingNumber = trackingNumber;
+    }
+    
+    if (status === 'shipped' && !updates.shippedAt) {
+      updates.shippedAt = new Date();
+    }
+    
+    if (status === 'delivered') {
+      updates.deliveredAt = new Date();
+    }
+    
+    const [order] = await db
+      .update(orders)
+      .set(updates)
+      .where(eq(orders.id, id))
+      .returning();
+    
+    if (!order) {
+      return NextResponse.json(
+        { success: false, error: 'Order not found' },
+        { status: 404 }
+      );
+    }
+    
     return NextResponse.json({
-      success: true,
-      message: 'Order updated successfully',
+      success: false,
+      order,
     });
   } catch (error) {
+    console.error('Failed to update order:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update order' },
       { status: 500 }

@@ -10,10 +10,10 @@ import { generateBookLayout } from '@/lib/layout/generator';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     // Get book
     const [book] = await db.select().from(books).where(eq(books.id, id)).limit(1);
@@ -97,10 +97,10 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     const [book] = await db.select().from(books).where(eq(books.id, id)).limit(1);
     
