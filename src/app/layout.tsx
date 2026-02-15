@@ -1,27 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { homeMetadata } from "@/lib/seo/metadata";
+import Script from 'next/script';
+import { organizationSchema } from "@/lib/seo/structured-data";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({ 
   subsets: ["latin"],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair',
+  weight: ['400', '700'],
 });
 
-export const metadata: Metadata = {
-  title: "Frametale - Turn Your Photos Into Beautiful Books",
-  description: "AI-powered photo book creator that automatically organizes your memories into stunning layouts. No design skills required.",
-  keywords: "photo book, photo album, picture book, AI photo organizer, memory book, wedding album",
-  openGraph: {
-    title: "Frametale - Beautiful Photo Books Made Easy",
-    description: "Create stunning photo books in minutes with AI-powered layouts",
-    type: "website",
-  },
-};
+export const metadata: Metadata = homeMetadata;
 
 export default function RootLayout({
   children,
@@ -30,9 +28,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <Script
+          id="organization-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema)
+          }}
+        />
+      </head>
+      <body className={`${inter.variable} ${playfair.variable} antialiased`}>
+        <GoogleAnalytics />
         {children}
       </body>
     </html>
