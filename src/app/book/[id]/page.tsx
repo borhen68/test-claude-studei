@@ -185,7 +185,7 @@ export default function BookViewerPage({
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-white text-xl mb-4">Book not found</p>
-          <button
+          <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
             onClick={() => router.push('/')}
             className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-500 transition-colors"
           >
@@ -221,14 +221,14 @@ export default function BookViewerPage({
             {/* Edit Mode Toggle */}
             {editMode ? (
               <>
-                <button
+                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                   onClick={saveEdits}
                   className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-500 transition-all flex items-center gap-2 shadow-lg shadow-green-500/30"
                 >
                   <Save className="h-4 w-4" />
                   Save Changes
                 </button>
-                <button
+                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                   onClick={() => setEditMode(false)}
                   className="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all flex items-center gap-2"
                 >
@@ -237,7 +237,7 @@ export default function BookViewerPage({
                 </button>
               </>
             ) : (
-              <button
+              <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                 onClick={() => setEditMode(true)}
                 className="px-4 py-2 bg-gray-800/50 text-white rounded-xl hover:bg-gray-700/50 transition-all flex items-center gap-2 border border-white/10"
               >
@@ -248,7 +248,7 @@ export default function BookViewerPage({
 
             {/* Zoom Controls */}
             <div className="flex items-center gap-2 bg-gray-800/50 rounded-xl px-3 py-2 border border-white/10">
-              <button
+              <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                 onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
                 disabled={zoom <= 0.5}
                 className="p-1.5 text-white hover:bg-white/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -258,7 +258,7 @@ export default function BookViewerPage({
               <span className="text-white text-sm min-w-[50px] text-center font-mono">
                 {Math.round(zoom * 100)}%
               </span>
-              <button
+              <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                 onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
                 disabled={zoom >= 2}
                 className="p-1.5 text-white hover:bg-white/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -268,7 +268,7 @@ export default function BookViewerPage({
             </div>
 
             {/* Thumbnails Toggle */}
-            <button
+            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
               onClick={() => setShowThumbnails((s) => !s)}
               className="p-2 text-white hover:bg-white/10 rounded-xl transition-all border border-white/10"
               title="Toggle thumbnails (T)"
@@ -277,7 +277,7 @@ export default function BookViewerPage({
             </button>
 
             {/* Fullscreen */}
-            <button
+            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
               onClick={toggleFullscreen}
               className="p-2 text-white hover:bg-white/10 rounded-xl transition-all border border-white/10"
               title="Fullscreen (F)"
@@ -290,7 +290,7 @@ export default function BookViewerPage({
             </button>
 
             {/* Export PDF */}
-            <button
+            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
               onClick={handleExportPDF}
               disabled={exporting}
               className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-500 hover:to-cyan-500 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 disabled:opacity-50"
@@ -304,7 +304,7 @@ export default function BookViewerPage({
             </button>
 
             {/* Checkout */}
-            <button
+            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
               onClick={handleCheckout}
               className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30 font-medium"
             >
@@ -401,7 +401,7 @@ export default function BookViewerPage({
           >
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center gap-2 mb-2">
-                <button
+                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                   onClick={() => setShowThumbnails(false)}
                   className="p-1 hover:bg-white/10 rounded transition-all"
                 >
@@ -522,7 +522,7 @@ function PageRenderer({
                   animate={{ opacity: 1 }}
                   className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center gap-2"
                 >
-                  <button
+                  <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                     className="p-2 bg-white rounded-lg hover:bg-red-500 hover:text-white transition-all"
                     onClick={() => handleRemovePhoto(layout.photoId)}
                   >
@@ -555,13 +555,13 @@ function PageRenderer({
                 placeholder="Add a caption..."
               />
               <div className="flex gap-2 mt-2">
-                <button
+                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                   onClick={handleSaveCaption}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-all text-sm"
                 >
                   Save
                 </button>
-                <button
+                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
                   onClick={() => {
                     setEditingCaption(false);
                     setCaption(page.textContent || '');
