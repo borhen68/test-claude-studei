@@ -121,3 +121,6 @@ export type NewOrder = typeof orders.$inferInsert;
 
 // Export email & notification tables
 export * from './schema-email-notifications';
+
+// Export CloudPrinter tables
+export * from './schema-cloudprinter';
