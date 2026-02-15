@@ -1,0 +1,275 @@
+/**
+ * Image Processing for Print-Ready PDFs
+ * Handles RGB→CMYK conversion, 300 DPI scaling, and bleed margins
+ */
+
+import sharp from 'sharp';
+import { DPI, BLEED_INCHES, inchesToPixels, validateImageResolution, QUALITY_SETTINGS } from './config';
+import { readFile } from 'fs/promises';
+import { fetch } from 'undici';
+
+export interface ProcessImageOptions {
+  targetWidthInches: number;
+  targetHeightInches: number;
+  addBleed?: boolean;
+  fit?: 'cover' | 'contain';
+  position?: 'center' | 'top' | 'bottom' | 'left' | 'right';
+}
+
+export interface ProcessedImage {
+  buffer: Buffer;
+  width: number;
+  height: number;
+  dpi: number;
+  warnings: string[];
+}
+
+/**
+ * Download image from URL
+ */
+async function downloadImage(url: string): Promise<Buffer> {
+  if (url.startsWith('file://') || url.startsWith('/')) {
+    const filePath = url.replace('file://', '');
+    return await readFile(filePath);
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download image: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
+/**
+ * Convert RGB to CMYK color space
+ * Note: Sharp doesn't natively support CMYK conversion, so we use a workaround
+ * For production, consider using ImageMagick or a dedicated CMYK library
+ */
+async function convertToCMYK(buffer: Buffer): Promise<Buffer> {
+  // Sharp limitation: No native CMYK support
+  // We'll keep the image in RGB but ensure it's in a print-friendly color space
+  // For true CMYK, you'd need to use ImageMagick or similar:
+  // `convert input.jpg -colorspace CMYK output.jpg`
+  
+  // For now, we'll convert to sRGB which printers can handle reasonably well
+  // TODO: Integrate ImageMagick for true CMYK conversion
+  return await sharp(buffer)
+    .toColorspace('srgb')
+    .toBuffer();
+}
+
+/**
+ * Process image for print: resize, convert color space, add bleed
+ */
+export async function processImageForPrint(
+  imageSource: string | Buffer,
+  options: ProcessImageOptions
+): Promise<ProcessedImage> {
+  const warnings: string[] = [];
+
+  // Load image
+  let imageBuffer: Buffer;
+  if (typeof imageSource === 'string') {
+    imageBuffer = await downloadImage(imageSource);
+  } else {
+    imageBuffer = imageSource;
+  }
+
+  // Get original dimensions
+  const metadata = await sharp(imageBuffer).metadata();
+  const originalWidth = metadata.width!;
+  const originalHeight = metadata.height!;
+
+  // Validate resolution
+  const validation = validateImageResolution(
+    originalWidth,
+    originalHeight,
+    options.targetWidthInches,
+    options.targetHeightInches
+  );
+
+  if (!validation.valid) {
+    warnings.push(validation.message || 'Image resolution too low');
+  } else if (validation.message) {
+    warnings.push(validation.message);
+  }
+
+  // Calculate target dimensions
+  const targetWidth = inchesToPixels(options.targetWidthInches, DPI);
+  const targetHeight = inchesToPixels(options.targetHeightInches, DPI);
+
+  // Process image
+  let processed = sharp(imageBuffer);
+
+  // Resize to target dimensions
+  processed = processed.resize(targetWidth, targetHeight, {
+    fit: options.fit || 'cover',
+    position: options.position || 'center',
+    withoutEnlargement: false, // Allow upscaling (with warning)
+  });
+
+  // Convert to print-friendly color space (sRGB for now, CMYK ideally)
+  processed = processed.toColorspace('srgb');
+
+  // Set DPI metadata
+  processed = processed.withMetadata({
+    density: DPI,
+  });
+
+  // High quality JPEG output
+  processed = processed.jpeg({
+    quality: QUALITY_SETTINGS.jpegQuality,
+    chromaSubsampling: '4:4:4', // No chroma subsampling for print
+    force: true,
+  });
+
+  const processedBuffer = await processed.toBuffer();
+  const finalMetadata = await sharp(processedBuffer).metadata();
+
+  return {
+    buffer: processedBuffer,
+    width: finalMetadata.width!,
+    height: finalMetadata.height!,
+    dpi: DPI,
+    warnings,
+  };
+}
+
+/**
+ * Add bleed margins to an image
+ */
+export async function addBleedMargins(
+  imageBuffer: Buffer,
+  bleedInches: number = BLEED_INCHES
+): Promise<Buffer> {
+  const metadata = await sharp(imageBuffer).metadata();
+  const bleedPixels = inchesToPixels(bleedInches, DPI);
+
+  // Extend image with bleed by scaling up slightly and extending edges
+  return await sharp(imageBuffer)
+    .resize(
+      metadata.width! + bleedPixels * 2,
+      metadata.height! + bleedPixels * 2,
+      { fit: 'fill' }
+    )
+    .toBuffer();
+}
+
+/**
+ * Crop and fit image to exact dimensions with bleed
+ */
+export async function cropAndFitWithBleed(
+  imageSource: string | Buffer,
+  widthInches: number,
+  heightInches: number,
+  addBleed: boolean = true
+): Promise<ProcessedImage> {
+  const targetWidth = addBleed ? widthInches + BLEED_INCHES * 2 : widthInches;
+  const targetHeight = addBleed ? heightInches + BLEED_INCHES * 2 : heightInches;
+
+  return await processImageForPrint(imageSource, {
+    targetWidthInches: targetWidth,
+    targetHeightInches: targetHeight,
+    fit: 'cover',
+    position: 'center',
+  });
+}
+
+/**
+ * Batch process multiple images
+ */
+export async function processImagesForPrint(
+  images: Array<{ source: string | Buffer; options: ProcessImageOptions }>
+): Promise<ProcessedImage[]> {
+  return await Promise.all(
+    images.map(({ source, options }) => processImageForPrint(source, options))
+  );
+}
+
+/**
+ * Check if ImageMagick is available for CMYK conversion
+ */
+export async function checkCMYKSupport(): Promise<boolean> {
+  try {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    await execAsync('convert -version');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Convert to CMYK using ImageMagick (if available)
+ */
+export async function convertToCMYKWithImageMagick(
+  inputBuffer: Buffer
+): Promise<Buffer> {
+  const { exec } = await import('child_process');
+  const { promisify } = await import('util');
+  const { writeFile, unlink } = await import('fs/promises');
+  const { tmpdir } = await import('os');
+  const { join } = await import('path');
+  
+  const execAsync = promisify(exec);
+  const tempIn = join(tmpdir(), `temp-in-${Date.now()}.jpg`);
+  const tempOut = join(tmpdir(), `temp-out-${Date.now()}.jpg`);
+
+  try {
+    // Write input
+    await writeFile(tempIn, inputBuffer);
+
+    // Convert to CMYK
+    await execAsync(
+      `convert "${tempIn}" -colorspace CMYK -quality ${QUALITY_SETTINGS.jpegQuality} "${tempOut}"`
+    );
+
+    // Read output
+    const outputBuffer = await readFile(tempOut);
+
+    // Clean up
+    await unlink(tempIn);
+    await unlink(tempOut);
+
+    return outputBuffer;
+  } catch (error) {
+    // Clean up on error
+    try {
+      await unlink(tempIn);
+      await unlink(tempOut);
+    } catch {}
+    
+    throw new Error(`CMYK conversion failed: ${error}`);
+  }
+}
+
+/**
+ * Process image with full CMYK conversion if available
+ */
+export async function processImageWithCMYK(
+  imageSource: string | Buffer,
+  options: ProcessImageOptions
+): Promise<ProcessedImage> {
+  const processed = await processImageForPrint(imageSource, options);
+
+  // Try CMYK conversion if ImageMagick is available
+  const hasCMYKSupport = await checkCMYKSupport();
+  if (hasCMYKSupport) {
+    try {
+      processed.buffer = await convertToCMYKWithImageMagick(processed.buffer);
+      console.log('✓ Converted to CMYK using ImageMagick');
+    } catch (error) {
+      console.warn('CMYK conversion failed, using sRGB:', error);
+      processed.warnings.push('CMYK conversion not available, using sRGB');
+    }
+  } else {
+    processed.warnings.push('ImageMagick not available for CMYK conversion');
+  }
+
+  return processed;
+}

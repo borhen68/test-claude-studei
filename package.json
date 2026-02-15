@@ -10,7 +10,10 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx scripts/seed.ts",
-    "migrate:auth": "tsx scripts/migrate-auth.ts"
+    "migrate:auth": "tsx scripts/migrate-auth.ts",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.990.0",
@@ -21,6 +24,7 @@
     "@react-pdf/renderer": "^4.3.2",
     "@stripe/stripe-js": "^8.7.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/pdfkit": "^0.17.5",
     "better-sqlite3": "^12.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -33,6 +37,7 @@
     "nanoid": "^5.1.6",
     "next": "16.1.6",
     "node-vibrant": "^4.0.4",
+    "pdfkit": "^0.17.2",
     "postgres": "^3.4.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -46,11 +51,16 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.4",
+    "jsdom": "^28.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

@@ -1,11 +1,11 @@
 /**
- * CloudPrinter File Upload and MD5 Generation (Updated)
+ * CloudPrinter File Upload and MD5 Generation
  */
 
 import { createHash } from 'crypto';
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { uploadToStorage } from '../storage/pdf-storage';
+import { uploadToStorage } from '@/lib/storage/unified-storage';
 
 /**
  * Generate MD5 checksum from file buffer
@@ -74,4 +74,52 @@ export async function getPDFPageCount(buffer: Buffer): Promise<number> {
   const content = buffer.toString('binary');
   const matches = content.match(/\/Type\s*\/Page[^s]/g);
   return matches ? matches.length : 0;
+}
+
+/**
+ * Prepare book files for CloudPrinter upload
+ */
+export async function prepareBookFiles(params: {
+  coverPdfPath?: string;
+  contentPdfPath: string;
+  bookId: string;
+}): Promise<{
+  cover?: { url: string; md5sum: string };
+  content: { url: string; md5sum: string };
+}> {
+  const { coverPdfPath, contentPdfPath, bookId } = params;
+
+  const result: any = {};
+
+  // Upload content PDF (required)
+  if (contentPdfPath) {
+    result.content = await uploadPDFFileWithMD5(
+      contentPdfPath,
+      `${bookId}_content.pdf`,
+      'cloudprinter/books'
+    );
+  }
+
+  // Upload cover PDF (optional)
+  if (coverPdfPath) {
+    result.cover = await uploadPDFFileWithMD5(
+      coverPdfPath,
+      `${bookId}_cover.pdf`,
+      'cloudprinter/books'
+    );
+  }
+
+  return result;
+}
+
+/**
+ * Mock file upload for development
+ */
+export function mockFileUpload(filename: string): { url: string; md5sum: string } {
+  const mockMD5 = createHash('md5').update(filename + Date.now()).digest('hex');
+  
+  return {
+    url: `https://cdn.frametale.com/mock/cloudprinter/${filename}`,
+    md5sum: mockMD5,
+  };
 }
