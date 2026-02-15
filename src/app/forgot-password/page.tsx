@@ -3,17 +3,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Mail, ArrowLeft, CheckCircle, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setIsLoading(true);
 
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -22,163 +23,148 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || 'Failed to send reset email');
-        return;
+      if (res.ok) {
+        setSent(true);
       }
-
-      setSuccess(true);
     } catch (err) {
-      setError('An unexpected error occurred');
+      console.error(err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-4 py-12 overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-100" />
-      
-      {/* Floating gradient orbs */}
-      <div className="absolute top-32 left-32 w-64 h-64 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob" />
-      <div className="absolute bottom-32 right-32 w-64 h-64 bg-violet-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000" />
-      
-      {/* Glassmorphic card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md z-10"
-      >
-        <div className="glass rounded-3xl shadow-2xl p-8 md:p-10">
-          {/* Back button */}
-          <Link 
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50/50 to-amber-50/30 flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 -left-40 w-96 h-96 bg-violet-300/20 rounded-full blur-3xl animate-blob" />
+        <div className="absolute -bottom-20 -right-40 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-blob animation-delay-2000" />
+      </div>
+
+      <div className="relative w-full max-w-md">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Back Link */}
+          <Link
             href="/login"
-            className="inline-flex items-center text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-8 font-medium transition-colors"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ArrowLeft className="h-4 w-4" />
             Back to login
           </Link>
 
-          {!success ? (
-            <>
-              {/* Header */}
-              <div className="text-center mb-8">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-                  className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center"
-                >
-                  <svg className="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                </motion.div>
-                <motion.h1 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent"
-                >
-                  Reset password
-                </motion.h1>
-                <motion.p 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-neutral-600 mt-2 text-sm md:text-base"
-                >
-                  Enter your email and we'll send you a reset link
-                </motion.p>
-              </div>
+          {/* Logo/Brand */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-block">
+              <motion.div
+                className="inline-flex items-center gap-3 mb-6"
+                whileHover={{ scale: 1.05 }}
+              >
+                <div className="p-3 bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl">
+                  <Sparkles className="h-8 w-8 text-white" />
+                </div>
+                <span className="text-3xl font-bold bg-gradient-to-br from-violet-900 to-purple-700 bg-clip-text text-transparent">
+                  Frametale
+                </span>
+              </motion.div>
+            </Link>
+            <h1 className="text-4xl font-bold text-neutral-900 mb-2">
+              Reset Password
+            </h1>
+            <p className="text-lg text-neutral-600">
+              Enter your email and we'll send you a reset link
+            </p>
+          </div>
 
+          {/* Card */}
+          <div className="bg-white/80 backdrop-blur-xl border-2 border-neutral-200 rounded-3xl shadow-2xl p-8">
+            {sent ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8"
+              >
+                <div className="inline-flex p-4 bg-green-100 rounded-full mb-6">
+                  <CheckCircle className="h-12 w-12 text-green-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-neutral-900 mb-3">
+                  Check Your Email
+                </h2>
+                <p className="text-neutral-600 leading-relaxed mb-6">
+                  We've sent a password reset link to<br />
+                  <strong className="text-neutral-900">{email}</strong>
+                </p>
+                <p className="text-sm text-neutral-500 mb-8">
+                  Didn't receive it? Check your spam folder or try again.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => setSent(false)}
+                  className="w-full"
+                >
+                  Send Another Link
+                </Button>
+              </motion.div>
+            ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Error message */}
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-red-50/80 backdrop-blur-sm border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
-                  >
-                    {error}
-                  </motion.div>
-                )}
-
-                {/* Email input with floating label */}
-                <div className="relative">
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    placeholder=" "
-                    className="peer w-full h-14 px-4 pt-6 pb-2 rounded-xl border-2 border-neutral-200 bg-white/50 backdrop-blur-sm text-neutral-900 placeholder-transparent focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all"
-                  />
-                  <label
-                    htmlFor="email"
-                    className="absolute left-4 top-2 text-xs text-neutral-500 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-focus:top-2 peer-focus:text-xs peer-focus:text-violet-600"
-                  >
-                    Email address
+                <div>
+                  <label htmlFor="email" className="block text-sm font-semibold text-neutral-700 mb-2">
+                    Email Address
                   </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-12"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
 
-                {/* Submit button */}
-                <motion.button
+                <Button
                   type="submit"
-                  disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="relative w-full h-14 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all overflow-hidden group"
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  disabled={isLoading}
+                  magnetic
                 >
-                  <span className="relative z-10">
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Sending...
-                      </span>
-                    ) : (
-                      'Send reset link'
-                    )}
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-violet-700 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </motion.button>
+                  {isLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
               </form>
-            </>
-          ) : (
-            /* Success state */
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-8"
+            )}
+          </div>
+
+          {/* Sign Up Link */}
+          <p className="text-center mt-8 text-neutral-600">
+            Don't have an account?{' '}
+            <Link
+              href="/signup"
+              className="font-semibold text-violet-600 hover:text-violet-700 transition-colors"
             >
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-neutral-900 mb-3">Check your email</h2>
-              <p className="text-neutral-600 mb-8">
-                We've sent a password reset link to <strong>{email}</strong>
-              </p>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all"
-              >
-                Return to login
-              </Link>
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
+              Sign up free
+            </Link>
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 }

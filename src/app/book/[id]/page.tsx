@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,7 +20,20 @@ import {
   GripVertical,
   Trash2,
   ChevronDown,
+  Wand2,
 } from 'lucide-react';
+
+// Studio Components
+import StudioLayout from '@/components/studio/StudioLayout';
+import StudioHeader from '@/components/studio/StudioHeader';
+import PageSidebar from '@/components/studio/PageSidebar';
+import StudioCanvas from '@/components/studio/StudioCanvas';
+import EditorToolbar from '@/components/studio/EditorToolbar';
+import UnusedPhotos from '@/components/studio/UnusedPhotos';
+
+// Hooks
+import { useHistory } from '@/hooks/useHistory';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface Photo {
   id: string;
@@ -65,6 +78,33 @@ export default function BookViewerPage({
   const [editMode, setEditMode] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  // Studio-specific state
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'themes' | 'layouts' | 'captions' | 'photo' | 'settings' | null>(null);
+  const [showGrid, setShowGrid] = useState(false);
+  const [showUnusedPhotos, setShowUnusedPhotos] = useState(false);
+
+  // History management
+  const {
+    state: historyState,
+    set: setHistoryState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useHistory<Book | null>(null);
+
+  // Auto-save
+  const { isSaving, lastSaved } = useAutoSave(
+    book,
+    book !== historyState,
+    async (data) => {
+      if (!data) return;
+      await saveToServer(data);
+    },
+    2000
+  );
+
   useEffect(() => {
     const fetchBook = async () => {
       try {
@@ -73,6 +113,7 @@ export default function BookViewerPage({
 
         if (data.success) {
           setBook(data.book);
+          setHistoryState(data.book);
         } else {
           alert('Book not found');
           router.push('/');
@@ -87,18 +128,60 @@ export default function BookViewerPage({
     fetchBook();
   }, [resolvedParams.id, router]);
 
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') prevPage();
-      if (e.key === 'ArrowRight') nextPage();
-      if (e.key === 'Escape' && isFullscreen) toggleFullscreen();
-      if (e.key === 'f') toggleFullscreen();
-      if (e.key === 't') setShowThumbnails((s) => !s);
+      if (!editMode) {
+        if (e.key === 'ArrowLeft') prevPage();
+        if (e.key === 'ArrowRight') nextPage();
+        if (e.key === 'Escape' && isFullscreen) toggleFullscreen();
+        if (e.key === 'f') toggleFullscreen();
+        if (e.key === 't') setShowThumbnails((s) => !s);
+      } else {
+        // Studio mode shortcuts
+        if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        }
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+          e.preventDefault();
+          redo();
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+          e.preventDefault();
+          handleManualSave();
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen, currentPage, book]);
+  }, [editMode, isFullscreen, currentPage, book, canUndo, canRedo]);
+
+  const saveToServer = async (bookData: Book) => {
+    try {
+      const res = await fetch(`/api/books/${bookData.id}/pages`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pages: bookData.pages, title: bookData.title }),
+      });
+      
+      if (!res.ok) throw new Error('Save failed');
+    } catch (error) {
+      console.error('Failed to save:', error);
+      throw error;
+    }
+  };
+
+  const handleManualSave = async () => {
+    if (!book) return;
+    try {
+      await saveToServer(book);
+      alert('Changes saved successfully!');
+    } catch (error) {
+      alert('Failed to save changes');
+    }
+  };
 
   const nextPage = () => {
     if (book && currentPage < book.pages.length - 1) {
@@ -129,14 +212,12 @@ export default function BookViewerPage({
   const handleExportPDF = async () => {
     setExporting(true);
     try {
-      // Trigger PDF generation
       const res = await fetch(`/api/books/${resolvedParams.id}/export`, {
         method: 'POST',
       });
       const data = await res.json();
 
       if (data.success && data.pdfUrl) {
-        // Download the PDF
         window.open(data.pdfUrl, '_blank');
       } else {
         alert('Failed to export PDF. Please try again.');
@@ -149,24 +230,108 @@ export default function BookViewerPage({
     }
   };
 
-  const saveEdits = async () => {
+  // Studio handlers
+  const handleTitleChange = (newTitle: string) => {
     if (!book) return;
+    const updatedBook = { ...book, title: newTitle };
+    setBook(updatedBook);
+    setHistoryState(updatedBook);
+  };
+
+  const handlePageReorder = (newPages: Page[]) => {
+    if (!book) return;
+    const updatedBook = { ...book, pages: newPages };
+    setBook(updatedBook);
+    setHistoryState(updatedBook);
+  };
+
+  const handleAddPage = () => {
+    if (!book) return;
+    const newPage: Page = {
+      id: `page-${Date.now()}`,
+      pageNumber: book.pages.length + 1,
+      template: 'duo',
+      photoIds: [],
+      layoutData: { layouts: [] },
+    };
+    const updatedBook = { ...book, pages: [...book.pages, newPage] };
+    setBook(updatedBook);
+    setHistoryState(updatedBook);
+  };
+
+  const handleDeletePage = (pageId: string) => {
+    if (!book) return;
+    const updatedPages = book.pages.filter((p) => p.id !== pageId);
+    const updatedBook = { ...book, pages: updatedPages };
+    setBook(updatedBook);
+    setHistoryState(updatedBook);
+  };
+
+  const handleDuplicatePage = (pageId: string) => {
+    if (!book) return;
+    const page = book.pages.find((p) => p.id === pageId);
+    if (!page) return;
     
-    try {
-      const res = await fetch(`/api/books/${book.id}/pages`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pages: book.pages }),
-      });
-      
-      if (res.ok) {
-        setEditMode(false);
-        alert('Changes saved successfully!');
-      }
-    } catch (error) {
-      console.error('Failed to save:', error);
-      alert('Failed to save changes');
+    const newPage = {
+      ...page,
+      id: `page-${Date.now()}`,
+      pageNumber: page.pageNumber + 1,
+    };
+    
+    const updatedPages = [...book.pages];
+    const index = updatedPages.findIndex((p) => p.id === pageId);
+    updatedPages.splice(index + 1, 0, newPage);
+    
+    const updatedBook = { ...book, pages: updatedPages };
+    setBook(updatedBook);
+    setHistoryState(updatedBook);
+  };
+
+  const handlePhotoMove = (fromSlot: string, toSlot: string) => {
+    console.log('Move photo from', fromSlot, 'to', toSlot);
+    // Implement photo swapping logic
+  };
+
+  const handlePhotoEdit = (photoId: string) => {
+    setSelectedPhoto(photoId);
+    setActiveTab('photo');
+  };
+
+  const handleThemeChange = (theme: string) => {
+    if (!book) return;
+    const updatedBook = { ...book, theme };
+    setBook(updatedBook);
+    setHistoryState(updatedBook);
+  };
+
+  const handleLayoutChange = (layout: string) => {
+    if (!book) return;
+    const updatedPages = [...book.pages];
+    const page = updatedPages[currentPage];
+    if (page) {
+      page.template = layout;
+      const updatedBook = { ...book, pages: updatedPages };
+      setBook(updatedBook);
+      setHistoryState(updatedBook);
     }
+  };
+
+  const handleCaptionUpdate = (caption: string) => {
+    if (!book) return;
+    const updatedPages = [...book.pages];
+    const page = updatedPages[currentPage];
+    if (page) {
+      page.textContent = caption;
+      const updatedBook = { ...book, pages: updatedPages };
+      setBook(updatedBook);
+      setHistoryState(updatedBook);
+    }
+  };
+
+  const getUnusedPhotos = (): Photo[] => {
+    if (!book) return [];
+    const usedPhotoIds = new Set(book.pages.flatMap((p) => p.photoIds));
+    return book.photos.filter((p) => !usedPhotoIds.has(p.id));
   };
 
   if (loading) {
@@ -185,7 +350,7 @@ export default function BookViewerPage({
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-white text-xl mb-4">Book not found</p>
-          <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
+          <button
             onClick={() => router.push('/')}
             className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-500 transition-colors"
           >
@@ -198,7 +363,81 @@ export default function BookViewerPage({
 
   const currentPageData = book.pages[currentPage];
   const photoMap = new Map(book.photos.map((p) => [p.id, p]));
+  const unusedPhotos = getUnusedPhotos();
 
+  // Studio Mode
+  if (editMode) {
+    return (
+      <StudioLayout
+        header={
+          <StudioHeader
+            bookTitle={book.title}
+            onTitleChange={handleTitleChange}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={undo}
+            onRedo={redo}
+            lastSaved={lastSaved || undefined}
+            isSaving={isSaving}
+            onPreview={() => setEditMode(false)}
+            onExit={() => router.push('/dashboard/books')}
+            onSave={handleManualSave}
+          />
+        }
+        sidebar={
+          <PageSidebar
+            pages={book.pages}
+            currentPage={currentPage}
+            onReorder={handlePageReorder}
+            onAdd={handleAddPage}
+            onDelete={handleDeletePage}
+            onDuplicate={handleDuplicatePage}
+            onNavigate={setCurrentPage}
+          />
+        }
+        canvas={
+          currentPageData && (
+            <StudioCanvas
+              page={currentPageData}
+              photos={photoMap}
+              onPhotoMove={handlePhotoMove}
+              onPhotoEdit={handlePhotoEdit}
+              onPhotoSelect={setSelectedPhoto}
+              selectedPhoto={selectedPhoto}
+              zoom={zoom}
+              onZoomChange={setZoom}
+              showGrid={showGrid}
+              onToggleGrid={() => setShowGrid(!showGrid)}
+            />
+          )
+        }
+        toolbar={
+          <EditorToolbar
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onThemeChange={handleThemeChange}
+            onLayoutChange={handleLayoutChange}
+            onCaptionUpdate={handleCaptionUpdate}
+            selectedPhoto={selectedPhoto}
+            currentTheme={book.theme}
+            currentLayout={currentPageData?.template}
+            currentCaption={currentPageData?.textContent}
+          />
+        }
+        unusedPhotos={
+          <UnusedPhotos
+            photos={unusedPhotos}
+            isOpen={showUnusedPhotos}
+            onToggle={() => setShowUnusedPhotos(!showUnusedPhotos)}
+            onAddToPage={(photoId) => console.log('Add photo', photoId)}
+          />
+        }
+        showUnusedPhotos={unusedPhotos.length > 0}
+      />
+    );
+  }
+
+  // Viewer Mode (Original)
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
@@ -219,36 +458,19 @@ export default function BookViewerPage({
 
           <div className="flex items-center gap-3">
             {/* Edit Mode Toggle */}
-            {editMode ? (
-              <>
-                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                  onClick={saveEdits}
-                  className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-500 transition-all flex items-center gap-2 shadow-lg shadow-green-500/30"
-                >
-                  <Save className="h-4 w-4" />
-                  Save Changes
-                </button>
-                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                  onClick={() => setEditMode(false)}
-                  className="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                onClick={() => setEditMode(true)}
-                className="px-4 py-2 bg-gray-800/50 text-white rounded-xl hover:bg-gray-700/50 transition-all flex items-center gap-2 border border-white/10"
-              >
-                <Edit3 className="h-4 w-4" />
-                Edit
-              </button>
-            )}
+            <motion.button
+              onClick={() => setEditMode(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30"
+            >
+              <Wand2 className="h-4 w-4" />
+              Open Studio
+            </motion.button>
 
             {/* Zoom Controls */}
             <div className="flex items-center gap-2 bg-gray-800/50 rounded-xl px-3 py-2 border border-white/10">
-              <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
+              <button
                 onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
                 disabled={zoom <= 0.5}
                 className="p-1.5 text-white hover:bg-white/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -258,7 +480,7 @@ export default function BookViewerPage({
               <span className="text-white text-sm min-w-[50px] text-center font-mono">
                 {Math.round(zoom * 100)}%
               </span>
-              <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
+              <button
                 onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
                 disabled={zoom >= 2}
                 className="p-1.5 text-white hover:bg-white/10 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -267,30 +489,8 @@ export default function BookViewerPage({
               </button>
             </div>
 
-            {/* Thumbnails Toggle */}
-            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-              onClick={() => setShowThumbnails((s) => !s)}
-              className="p-2 text-white hover:bg-white/10 rounded-xl transition-all border border-white/10"
-              title="Toggle thumbnails (T)"
-            >
-              <Grid3x3 className="h-5 w-5" />
-            </button>
-
-            {/* Fullscreen */}
-            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-              onClick={toggleFullscreen}
-              className="p-2 text-white hover:bg-white/10 rounded-xl transition-all border border-white/10"
-              title="Fullscreen (F)"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="h-5 w-5" />
-              ) : (
-                <Maximize2 className="h-5 w-5" />
-              )}
-            </button>
-
             {/* Export PDF */}
-            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
+            <button
               onClick={handleExportPDF}
               disabled={exporting}
               className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-500 hover:to-cyan-500 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 disabled:opacity-50"
@@ -304,7 +504,7 @@ export default function BookViewerPage({
             </button>
 
             {/* Checkout */}
-            <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
+            <button
               onClick={handleCheckout}
               className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30 font-medium"
             >
@@ -317,7 +517,6 @@ export default function BookViewerPage({
 
       {/* Book Viewer */}
       <div className="flex items-center justify-center min-h-[calc(100vh-160px)] p-8 relative">
-        {/* Navigation Arrows */}
         <motion.button
           onClick={prevPage}
           disabled={currentPage === 0}
@@ -328,7 +527,6 @@ export default function BookViewerPage({
           <ChevronLeft className="h-8 w-8 text-purple-900" />
         </motion.button>
 
-        {/* Page Container with Flip Animation */}
         <div className="relative perspective-[2000px]">
           <AnimatePresence mode="wait" custom={currentPage}>
             <motion.div
@@ -350,33 +548,10 @@ export default function BookViewerPage({
               }}
             >
               {currentPageData && (
-                <PageRenderer
-                  page={currentPageData}
-                  photos={photoMap}
-                  editMode={editMode}
-                  onUpdate={(updatedPage) => {
-                    const newPages = [...book.pages];
-                    const index = newPages.findIndex(
-                      (p) => p.id === updatedPage.id
-                    );
-                    if (index !== -1) {
-                      newPages[index] = updatedPage;
-                      setBook({ ...book, pages: newPages });
-                    }
-                  }}
-                />
+                <PageRenderer page={currentPageData} photos={photoMap} />
               )}
             </motion.div>
           </AnimatePresence>
-
-          {/* Page Number Indicator */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm px-6 py-2 rounded-full text-white text-sm font-light"
-          >
-            {currentPage + 1} / {book.pages.length}
-          </motion.div>
         </div>
 
         <motion.button
@@ -390,7 +565,7 @@ export default function BookViewerPage({
         </motion.button>
       </div>
 
-      {/* Thumbnail Navigation */}
+      {/* Thumbnails */}
       <AnimatePresence>
         {showThumbnails && (
           <motion.div
@@ -400,37 +575,20 @@ export default function BookViewerPage({
             className="fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-xl border-t border-white/10 p-4 z-10"
           >
             <div className="max-w-7xl mx-auto">
-              <div className="flex items-center gap-2 mb-2">
-                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                  onClick={() => setShowThumbnails(false)}
-                  className="p-1 hover:bg-white/10 rounded transition-all"
-                >
-                  <ChevronDown className="h-4 w-4 text-white" />
-                </button>
-                <span className="text-white text-sm font-light">
-                  Page Navigation
-                </span>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-transparent">
+              <div className="flex gap-3 overflow-x-auto pb-2">
                 {book.pages.map((page, index) => (
                   <motion.button
                     key={page.id}
                     onClick={() => setCurrentPage(index)}
                     whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`flex-shrink-0 w-24 h-32 rounded-lg overflow-hidden border-2 transition-all shadow-lg ${
+                    className={`flex-shrink-0 w-24 h-32 rounded-lg overflow-hidden border-2 transition-all ${
                       currentPage === index
-                        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/50'
+                        ? 'border-purple-500 ring-4 ring-purple-500/50'
                         : 'border-white/20 hover:border-white/40'
                     }`}
                   >
-                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative">
-                      <span className="text-gray-600 text-xs font-mono">
-                        {index + 1}
-                      </span>
-                      {currentPage === index && (
-                        <div className="absolute inset-0 bg-purple-500/20" />
-                      )}
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-600 text-xs">{index + 1}</span>
                     </div>
                   </motion.button>
                 ))}
@@ -439,15 +597,6 @@ export default function BookViewerPage({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Help Overlay */}
-      <div className="fixed bottom-4 left-4 bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-xs space-y-1 border border-white/10">
-        <div className="font-semibold mb-2 text-purple-300">Keyboard Shortcuts</div>
-        <div>← → : Navigate pages</div>
-        <div>F : Toggle fullscreen</div>
-        <div>T : Toggle thumbnails</div>
-        <div>ESC : Exit fullscreen</div>
-      </div>
     </div>
   );
 }
@@ -456,34 +605,14 @@ export default function BookViewerPage({
 function PageRenderer({
   page,
   photos,
-  editMode,
-  onUpdate,
 }: {
   page: Page;
   photos: Map<string, Photo>;
-  editMode: boolean;
-  onUpdate: (page: Page) => void;
 }) {
-  const [editingCaption, setEditingCaption] = useState(false);
-  const [caption, setCaption] = useState(page.textContent || '');
   const layouts = page.layoutData?.layouts || [];
-
-  const handleRemovePhoto = (photoId: string) => {
-    const newLayouts = layouts.filter((l: any) => l.photoId !== photoId);
-    onUpdate({
-      ...page,
-      layoutData: { ...page.layoutData, layouts: newLayouts },
-    });
-  };
-
-  const handleSaveCaption = () => {
-    onUpdate({ ...page, textContent: caption });
-    setEditingCaption(false);
-  };
 
   return (
     <div className="relative w-full h-full bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Photo Layouts */}
       <AnimatePresence>
         {layouts.map((layout: any, index: number) => {
           const photo = photos.get(layout.photoId);
@@ -496,11 +625,8 @@ function PageRenderer({
               key={layout.photoId}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
               transition={{ delay: index * 0.1 }}
-              className={`absolute overflow-hidden shadow-lg ${
-                editMode ? 'cursor-move' : ''
-              }`}
+              className="absolute overflow-hidden shadow-lg"
               style={{
                 left: `${x * 100}%`,
                 top: `${y * 100}%`,
@@ -508,87 +634,29 @@ function PageRenderer({
                 height: `${height * 100}%`,
               }}
             >
-              <motion.img
+              <img
                 src={photo.processedUrl || photo.originalUrl}
                 alt={`Photo ${index + 1}`}
                 className="w-full h-full object-cover"
-                whileHover={editMode ? { scale: 1.02 } : {}}
               />
-
-              {/* Edit Mode Controls */}
-              {editMode && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center gap-2"
-                >
-                  <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                    className="p-2 bg-white rounded-lg hover:bg-red-500 hover:text-white transition-all"
-                    onClick={() => handleRemovePhoto(layout.photoId)}
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                  <button className="p-2 bg-white rounded-lg hover:bg-blue-500 hover:text-white transition-all">
-                    <GripVertical className="h-5 w-5" />
-                  </button>
-                </motion.div>
-              )}
             </motion.div>
           );
         })}
       </AnimatePresence>
 
-      {/* Caption/Text Content */}
-      {(page.textContent || editMode) && (
+      {page.textContent && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-8 left-8 right-8"
+          className="absolute bottom-8 left-8 right-8 text-center"
         >
-          {editMode && editingCaption ? (
-            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-xl">
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={2}
-                placeholder="Add a caption..."
-              />
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                  onClick={handleSaveCaption}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-all text-sm"
-                >
-                  Save
-                </button>
-                <button onClick={() => window.open(`/api/books/${resolvedParams.id}/pdf`, "_blank")}
-                  onClick={() => {
-                    setEditingCaption(false);
-                    setCaption(page.textContent || '');
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div
-              onClick={() => editMode && setEditingCaption(true)}
-              className={`text-center ${
-                editMode ? 'cursor-pointer hover:bg-white/10 rounded-lg p-2' : ''
-              }`}
-            >
-              <p className="text-gray-700 text-lg italic font-light drop-shadow-lg">
-                {caption || (editMode && 'Click to add caption')}
-              </p>
-            </div>
-          )}
+          <p className="text-gray-700 text-lg italic font-light">
+            {page.textContent}
+          </p>
         </motion.div>
       )}
 
-      {/* Page Number Watermark */}
-      <div className="absolute bottom-4 right-8 text-gray-400 text-sm font-light">
+      <div className="absolute bottom-4 right-8 text-gray-400 text-sm">
         {page.pageNumber}
       </div>
     </div>
