@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Menu, X, User } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export function Header() {
@@ -38,10 +39,13 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-              <BookOpen className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">Frametale</span>
+            <Image 
+              src="/logo.svg" 
+              alt="Frametale" 
+              width={180} 
+              height={40}
+              className="h-10 w-auto group-hover:scale-105 transition-transform"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -52,8 +56,8 @@ export function Header() {
                 href={item.href}
                 className={`text-sm font-medium transition-colors ${
                   isActive(item.href)
-                    ? 'text-orange-600'
-                    : 'text-gray-600 hover:text-orange-600'
+                    ? 'text-[#0376AD]'
+                    : 'text-gray-600 hover:text-[#28BAAB]'
                 }`}
               >
                 {item.name}
@@ -66,7 +70,7 @@ export function Header() {
             {isLoggedIn ? (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-orange-600 transition-colors"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-[#0376AD] transition-colors"
               >
                 <User className="h-4 w-4" />
                 My Books
@@ -74,7 +78,7 @@ export function Header() {
             ) : (
               <Link
                 href="/login"
-                className="text-sm font-medium text-gray-600 hover:text-orange-600 transition-colors"
+                className="text-sm font-medium text-gray-600 hover:text-[#0376AD] transition-colors"
               >
                 Sign In
               </Link>
@@ -82,7 +86,7 @@ export function Header() {
             
             <Link
               href="/upload"
-              className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all"
+              className="px-5 py-2.5 bg-frametale-gradient text-white rounded-full font-semibold text-sm hover:shadow-lg hover:scale-105 transition-all"
             >
               Create Your Book
             </Link>
@@ -113,8 +117,8 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`text-base font-medium transition-colors py-2 ${
                     isActive(item.href)
-                      ? 'text-orange-600'
-                      : 'text-gray-700 hover:text-orange-600'
+                      ? 'text-[#0376AD]'
+                      : 'text-gray-700 hover:text-[#28BAAB]'
                   }`}
                 >
                   {item.name}
@@ -126,7 +130,7 @@ export function Header() {
                   <Link
                     href="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 text-base font-medium text-gray-700 hover:text-orange-600 transition-colors py-2"
+                    className="flex items-center gap-2 text-base font-medium text-gray-700 hover:text-[#0376AD] transition-colors py-2"
                   >
                     <User className="h-4 w-4" />
                     My Books
@@ -135,7 +139,7 @@ export function Header() {
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-base font-medium text-gray-600 hover:text-orange-600 transition-colors py-2 block"
+                    className="text-base font-medium text-gray-600 hover:text-[#0376AD] transition-colors py-2 block"
                   >
                     Sign In
                   </Link>
@@ -144,7 +148,7 @@ export function Header() {
                 <Link
                   href="/upload"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="mt-3 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-full font-semibold text-sm hover:shadow-lg transition-all text-center block"
+                  className="mt-3 px-5 py-2.5 bg-frametale-gradient text-white rounded-full font-semibold text-sm hover:shadow-lg transition-all text-center block"
                 >
                   Create Your Book
                 </Link>
