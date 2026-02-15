@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createCheckoutSession } from '@/lib/payments/stripe-client';
 
-/**
- * POST /api/checkout
- * Create Stripe checkout session
- */
 export async function POST(request: NextRequest) {
   try {
     const { bookId } = await request.json();
@@ -14,21 +11,25 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
-    // TODO: Implement Stripe checkout session creation
-    // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-    // const session = await stripe.checkout.sessions.create({...});
+    const session = await createCheckoutSession({
+      bookId,
+      priceInCents: 3900, // $39.00
+      successUrl: `${appUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl}/book/${bookId}`,
+    });
     
-    // For now, return placeholder
     return NextResponse.json({
       success: true,
-      checkoutUrl: '/order/success', // placeholder
-      sessionId: 'placeholder',
+      checkoutUrl: session.url,
+      sessionId: session.id,
     });
   } catch (error) {
-    console.error('Checkout failed:', error);
+    console.error('Checkout creation failed:', error);
     return NextResponse.json(
-      { success: false, error: 'Checkout failed' },
+      { success: false, error: 'Failed to create checkout session' },
       { status: 500 }
     );
   }
